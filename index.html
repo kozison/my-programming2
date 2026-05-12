@@ -272,6 +272,7 @@
         </div>
     </div>
 
+    <!-- SETUP SCREEN -->
     <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative mx-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
@@ -340,6 +341,7 @@
         </div>
     </div>
 
+    <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
             <div class="glass-panel p-2 flex flex-col w-1/4">
@@ -394,6 +396,7 @@
         </div>
     </div>
 
+    <!-- RESULT OVERLAY -->
     <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state backdrop-blur-md">
         <div class="text-center p-8 glass-panel border-cyan-500 border-2 shadow-2xl max-w-sm w-full font-bold">
             <h2 id="result-title" class="text-5xl font-bold mb-3 tracking-tighter uppercase italic text-cyan-400">Result</h2>
@@ -550,7 +553,9 @@
                 showError('create', err.type === 'unavailable-id' ? 'Already Used' : 'Connection Error');
                 btn.innerText = "Create Room"; btn.disabled = false;
             });
-            peer.on('connection', (connection) => { conn = connection; setupConnection(); });
+            peer.on('connection', (connection) => { 
+                conn = connection; setupConnection(); 
+            });
         };
 
         window.searchRoom = () => {
@@ -627,7 +632,14 @@
 
         window.showMainMenu = () => { disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
+        window.showOnlineLobby = () => { 
+            hideAll(); 
+            document.getElementById('online-lobby').classList.remove('hidden-state');
+            document.getElementById('join-preview').classList.add('hidden'); 
+            const sBtn = document.getElementById('search-btn');
+            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
+            disbandRoom(); 
+        };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -728,7 +740,7 @@
             if(myPlayerNum === 1) { config.showP1Stats = document.getElementById('onlineStatsToggle').checked; config.showP2Stats = config.showP1Stats; }
             else { config.showP1Stats = config.showP2Stats = true; }
             startGameUI();
-            await showTurnAnnounce(currentPlayer === myPlayerNum ? "YOU ARE FIRST" : "YOU ARE SECOND");
+            await showTurnAnnounce(currentPlayer === myPlayerNum ? "YOU ARE FIRST" : "YOU ARE SECOND", currentPlayer === myPlayerNum);
         }
 
         async function startGame() { 
@@ -737,7 +749,7 @@
             startingPlayer = Math.random() < 0.5 ? 1 : 2; currentPlayer = startingPlayer;
             turn = 1; document.getElementById('p1-panel-label').innerText = "YOU"; document.getElementById('p2-name-label').innerText = config.mode === '1p' ? "CPU" : "2P";
             startGameUI(); 
-            await showTurnAnnounce(startingPlayer === 1 ? "1P IS FIRST" : "2P IS FIRST");
+            await showTurnAnnounce(startingPlayer === 1 ? "1P IS FIRST" : "2P IS FIRST", startingPlayer === 1);
         }
 
         function startGameUI() {
@@ -820,21 +832,24 @@
             
             if (res.hits === config.digits) {
                 if (currentPlayer === startingPlayer) {
-                    p1WonThisRound = true; // 先行が正解した場合は、後攻のラストチャンスへ
+                    p1WonThisRound = true; // 先行が正解。後攻のターンへ。
                 } else {
-                    if (p1WonThisRound) return endGame("DRAW"); // 両者正解
-                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN"); // 後攻が先に正解、または単独正解
+                    if (p1WonThisRound) return endGame("DRAW");
+                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
                 }
             } else {
                 if (currentPlayer !== startingPlayer && p1WonThisRound) {
-                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN"); // 後攻がラストチャンスを逃した
+                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
                 }
             }
 
             if (config.mode === '1p') { 
                 const cpuWon = await cpuTurn(); 
-                if (cpuWon) endGame(p1WonThisRound ? "DRAW" : "YOU LOSE");
-                else if (p1WonThisRound) endGame("YOU WIN"); else { turn++; initTurn(); }
+                if (cpuWon) {
+                    if (p1WonThisRound) return endGame("DRAW");
+                    return endGame("YOU LOSE");
+                } else if (p1WonThisRound) return endGame("YOU WIN"); 
+                else { turn++; initTurn(); }
             } else { 
                 currentPlayer = (currentPlayer === 1 ? 2 : 1); 
                 if (currentPlayer === startingPlayer) turn++;
@@ -854,7 +869,8 @@
                 if (res.hits === config.digits) p1WonThisRound = true;
             } else { p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; }); }
 
-            if (currentPlayer !== startingPlayer) { // ターンの終わり（第2プレイヤーの番だった）
+            // ターン終了（後攻が回答した）後のチェック
+            if (currentPlayer !== startingPlayer) {
                 if (p1WonThisRound && res.hits === config.digits) return endGame("DRAW");
                 if (p1WonThisRound) return endGame(startingPlayer === myPlayerNum ? "YOU WIN" : "YOU LOSE");
                 if (res.hits === config.digits) return endGame(startingPlayer === myPlayerNum ? "YOU LOSE" : "YOU WIN");
@@ -879,14 +895,20 @@
             if (title.includes("WIN") || title === "DRAW") sfx.win(); else sfx.loss(); 
         }
 
-        async function showTurnAnnounce(text) {
+        async function showTurnAnnounce(text, isFirst) {
             return new Promise(resolve => {
                 const announce = document.getElementById('big-announce'); 
-                document.getElementById('big-number').innerText = text;
+                const bigNum = document.getElementById('big-number');
+                bigNum.innerText = text;
+                bigNum.style.color = isFirst ? "var(--neon-blue)" : "var(--neon-pink)";
                 document.getElementById('big-result').innerHTML = "";
-                document.getElementById('big-player').innerText = "STARTING...";
+                document.getElementById('big-player').innerText = "GAME START";
                 announce.classList.add('show'); sfx.scan();
-                setTimeout(() => { announce.classList.remove('show'); setTimeout(resolve, 300); }, 1500);
+                setTimeout(() => { 
+                    announce.classList.remove('show'); 
+                    bigNum.style.color = "white"; // Reset for next announce
+                    setTimeout(resolve, 300); 
+                }, 1500);
             });
         }
 

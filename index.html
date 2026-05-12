@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hit&Blow</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Vercelで設定なしで無料で通信するためのライブラリ (PeerJS) -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -72,10 +71,13 @@
         .blow { color: var(--neon-blue); font-weight: bold; }
 
         .btn-launch {
-            background: linear-gradient(135deg, #0072ff, #00d4ff);
-            color: black; font-weight: bold;
+            background: linear-gradient(135deg, #00f2ff, #0072ff);
+            color: #000; font-weight: 900;
+            transition: all 0.2s;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.3);
         }
-        .btn-launch:disabled { opacity: 0.2; filter: grayscale(1); }
+        .btn-launch:active { transform: scale(0.95); filter: brightness(1.2); }
+        .btn-launch:disabled { opacity: 0.2; filter: grayscale(1); transform: none; }
 
         .btn-mini {
             background: rgba(255, 255, 255, 0.05);
@@ -152,13 +154,13 @@
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
-            <!-- Timer hidden but functional -->
             <div id="timer-box" class="hidden"><span id="gameTimer">♾️</span></div>
         </div>
         
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                <button onclick="if(window.resetAudio) window.resetAudio()" class="text-[8px] bg-white/10 px-2 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-2 uppercase">Reset</button>
+                <!-- リセットオーディオをRESETに変更 -->
+                <button onclick="if(window.resetAudio) window.resetAudio()" class="text-[8px] bg-white/10 px-3 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-2 uppercase">RESET</button>
                 
                 <div class="flex items-center gap-1.5">
                     <span class="text-[9px] opacity-50 uppercase font-bold">BGM</span>
@@ -193,7 +195,8 @@
     <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
-            <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic">Hit&Blow</h1>
+            <!-- タイトルの位置を調整 (italicによる視覚的なズレを補正) -->
+            <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full pl-[0.2em]">Hit&Blow</h1>
             
             <button onclick="if(window.showOfflineSetup) window.showOfflineSetup()" class="menu-btn group mx-auto">
                 <div class="flex justify-between items-center">
@@ -376,7 +379,7 @@
                             <button onclick="if(window.randomizeGuess) window.randomizeGuess()" class="py-2.5 btn-mini rounded-lg text-sm">🎲</button>
                             <button onclick="if(window.backspaceGuess) window.backspaceGuess()" class="py-2.5 btn-mini rounded-lg text-sm">⌫</button>
                             <button onclick="if(window.clearCurrentGuess) window.clearCurrentGuess()" class="py-2.5 btn-mini rounded-lg text-sm text-red-400">🗑️</button>
-                            <button id="launchBtn" onclick="if(window.playerAction) window.playerAction()" disabled class="btn-launch rounded-lg text-[12px] uppercase font-bold shadow-lg">OK</button>
+                            <button id="launchBtn" onclick="if(window.playerAction) window.playerAction()" disabled class="btn-launch rounded-lg text-lg uppercase font-black shadow-lg">OK</button>
                         </div>
                     </div>
                     <div id="waiting-opponent-msg" class="hidden text-center py-4 bg-white/5 rounded-lg border border-white/10">
@@ -421,7 +424,7 @@
 
     <script>
         // ==========================================
-        // 1. AUDIO ENGINE & GLOBAL FUNCTIONS
+        // 1. AUDIO ENGINE
         // ==========================================
         let audioCtx = null;
         let masterCompressor, bgmGain, seGain;
@@ -486,15 +489,11 @@
             if (type === 'bgm') {
                 currentBgmVol = v; 
                 if (bgmGain) bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
-                const label = document.getElementById('bgmLabel');
-                if(label) label.innerText = Math.round(v * 100);
                 if(v > 0) prevBgmVol = v;
                 updateMuteIcon('bgm', v === 0);
             } else {
                 currentSeVol = v; 
                 if(seGain) seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
-                const label = document.getElementById('seLabel');
-                if(label) label.innerText = Math.round(v * 100);
                 if(v > 0) prevSeVol = v;
                 updateMuteIcon('se', v === 0);
             }
@@ -543,165 +542,80 @@
         let myUserName = "Guest";
         let partnerName = "Partner";
         let myPlayerNum = null;
-        
         let hostReady = false;
         let guestReady = false;
 
         function disbandRoom() {
-            if (peer) {
-                peer.destroy();
-                peer = null;
-            }
-            conn = null;
-            hostReady = false;
-            guestReady = false;
+            if (peer) { peer.destroy(); peer = null; }
+            conn = null; hostReady = false; guestReady = false;
         }
 
         window.createRoom = () => {
             const rawId = document.getElementById('create-room-id').value.trim().toUpperCase();
             if(!rawId) return showError('create', 'パスワードを入力');
-            
             const btn = document.getElementById('create-btn');
-            btn.innerText = "Creating...";
-            btn.disabled = true;
-
+            btn.innerText = "Creating..."; btn.disabled = true;
             myUserName = document.getElementById('user-name-input').value.trim() || "Host";
-
             disbandRoom();
             peer = new Peer('HB-ROOM-' + rawId);
-            
             peer.on('open', (id) => {
-                myPlayerNum = 1;
-                config.mode = 'online';
-                enterOnlineSetup();
-                btn.innerText = "Create Room";
-                btn.disabled = false;
+                myPlayerNum = 1; config.mode = 'online'; enterOnlineSetup();
+                btn.innerText = "Create Room"; btn.disabled = false;
             });
-
             peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    showError('create', 'Already Used');
-                } else {
-                    showError('create', 'Connection Error');
-                }
-                btn.innerText = "Create Room";
-                btn.disabled = false;
+                showError('create', err.type === 'unavailable-id' ? 'Already Used' : 'Connection Error');
+                btn.innerText = "Create Room"; btn.disabled = false;
             });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                setupConnection();
-            });
+            peer.on('connection', (connection) => { conn = connection; setupConnection(); });
         };
 
         window.searchRoom = () => {
             const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
             if(!rawId) return showError('join', 'パスワードを入力');
-            
             const btn = document.getElementById('search-btn');
-            btn.innerText = "Searching...";
-            btn.disabled = true;
-
+            btn.innerText = "Searching..."; btn.disabled = true;
             disbandRoom();
-            peer = new Peer(); // Guest gets random ID
-            
+            peer = new Peer();
             peer.on('open', () => {
                 const tempConn = peer.connect('HB-ROOM-' + rawId);
-                
-                tempConn.on('open', () => {
-                    tempConn.send({ type: 'request-info' });
-                });
-
+                tempConn.on('open', () => tempConn.send({ type: 'request-info' }));
                 tempConn.on('data', data => {
                     if(data.type === 'room-info') {
-                        document.getElementById('preview-id-text').innerText = rawId;
                         document.getElementById('preview-host-name').innerText = data.hostName || "Host";
                         document.getElementById('preview-digits').innerText = data.config.digits;
                         document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
-                        
                         document.getElementById('join-preview').classList.remove('hidden');
-                        btn.classList.add('hidden');
-                        conn = tempConn;
+                        btn.classList.add('hidden'); conn = tempConn;
                     }
                 });
-                
-                setTimeout(() => {
-                    if(!conn || !conn.open) {
-                        showError('join', 'Not Found or Playing');
-                        btn.innerText = "Search";
-                        btn.disabled = false;
-                    }
-                }, 3000);
+                setTimeout(() => { if(!conn || !conn.open) { showError('join', 'Not Found or Playing'); btn.innerText = "Search"; btn.disabled = false; } }, 3000);
             });
         };
 
         window.confirmJoin = () => {
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
-            myPlayerNum = 2;
-            config.mode = 'online';
+            myPlayerNum = 2; config.mode = 'online';
             conn.send({ type: 'guest-join', guestName: myUserName });
-            setupConnection();
-            enterOnlineSetup();
+            setupConnection(); enterOnlineSetup();
         };
 
         function setupConnection() {
             conn.on('data', data => {
-                // Host receives this
-                if(data.type === 'request-info') {
-                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
-                }
-                // Host receives this
-                else if(data.type === 'guest-join') {
-                    partnerName = data.guestName || "Guest";
-                    document.getElementById('p2-name-label').innerText = partnerName;
-                }
-                // Guest receives this
-                else if(data.type === 'start') {
-                    config = data.config;
-                    config.mode = 'online';
-                    currentPlayer = data.startPlayer;
-                    partnerName = data.hostName;
-                    startGameOnline();
-                }
-                // Both receive
-                else if(data.type === 'ready') {
-                    if(myPlayerNum === 1) {
-                        guestReady = true;
-                        p2Secret = data.secret;
-                        checkOnlineStart();
-                    } else {
-                        hostReady = true;
-                        p1Secret = data.secret;
-                    }
-                }
-                else if(data.type === 'cancel-ready') {
-                    if(myPlayerNum === 1) guestReady = false;
-                    else hostReady = false;
-                }
-                else if(data.type === 'action') {
-                    window.handleRemoteAction(data);
-                }
+                if(data.type === 'request-info') conn.send({ type: 'room-info', config: config, hostName: myUserName });
+                else if(data.type === 'guest-join') { partnerName = data.guestName || "Guest"; document.getElementById('p2-name-label').innerText = partnerName; }
+                else if(data.type === 'start') { config = data.config; config.mode = 'online'; currentPlayer = data.startPlayer; partnerName = data.hostName; startGameOnline(); }
+                else if(data.type === 'ready') { if(myPlayerNum === 1) { guestReady = true; p2Secret = data.secret; checkOnlineStart(); } else { hostReady = true; p1Secret = data.secret; } }
+                else if(data.type === 'cancel-ready') { if(myPlayerNum === 1) guestReady = false; else hostReady = false; }
+                else if(data.type === 'action') { window.handleRemoteAction(data); }
             });
-
-            conn.on('close', () => {
-                if(!document.getElementById('game-screen').classList.contains('hidden-state') || 
-                   !document.getElementById('setup-screen').classList.contains('hidden-state')) {
-                    alert("Connection lost with partner.");
-                    window.showOnlineLobby();
-                }
-            });
+            conn.on('close', () => { if(!document.getElementById('game-screen').classList.contains('hidden-state')) { alert("Connection lost with partner."); window.showOnlineLobby(); } });
         }
 
         function checkOnlineStart() {
             if (myPlayerNum === 1 && hostReady && guestReady) {
                 currentPlayer = Math.random() > 0.5 ? 1 : 2;
-                conn.send({ 
-                    type: 'start', 
-                    config: config,
-                    hostName: myUserName,
-                    startPlayer: currentPlayer 
-                });
+                conn.send({ type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer });
                 startGameOnline();
             }
         }
@@ -722,8 +636,7 @@
 
         window.showMainMenu = () => {
             if (config.mode === 'online') disbandRoom();
-            clearInterval(gameTimerInterval);
-            hideAll();
+            clearInterval(gameTimerInterval); hideAll();
             document.getElementById('main-menu').classList.remove('hidden-state');
             document.getElementById('exitBtn').classList.add('hidden');
         };
@@ -736,8 +649,7 @@
         };
 
         window.showOnlineLobby = () => {
-            hideAll();
-            document.getElementById('online-lobby').classList.remove('hidden-state');
+            hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state');
             document.getElementById('join-preview').classList.add('hidden');
             document.getElementById('search-btn').classList.remove('hidden');
             document.getElementById('search-btn').innerText = "Search";
@@ -748,27 +660,18 @@
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
                 if (document.getElementById('start-btn').classList.contains('hidden')) {
-                    // 準備完了をキャンセル
                     if(conn && conn.open) conn.send({ type: 'cancel-ready' });
                     if(myPlayerNum === 1) hostReady = false; else guestReady = false;
-                    
                     document.getElementById('start-btn').classList.remove('hidden');
                     document.getElementById('online-waiting-info').classList.add('hidden');
-                    
                     setupState.p1Secret = Array(config.digits).fill(null); activeIdx = 0;
                     window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
-                } else {
-                    disbandRoom();
-                    window.showOnlineLobby();
-                }
+                } else { disbandRoom(); window.showOnlineLobby(); }
             } else if (config.mode === '2p' && setupState.phase === 'p2') {
-                setupState.phase = 'p1';
-                setupState.p1Secret = Array(config.digits).fill(null);
+                setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null);
                 setupState.p2Secret = Array(config.digits).fill(null);
                 activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
-            } else {
-                window.showMainMenu();
-            }
+            } else { window.showMainMenu(); }
         };
 
         window.handleSmartExit = () => {
@@ -777,29 +680,13 @@
             document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
-            
-            if (config.mode === 'online') {
-                disbandRoom();
-                window.showOnlineLobby();
-            } else {
-                setupState.p1Secret = Array(config.digits).fill(null);
-                setupState.p2Secret = Array(config.digits).fill(null);
-                activeIdx = 0; 
-                hideAll();
-                document.getElementById('setup-screen').classList.remove('hidden-state');
-                document.getElementById('setup-options').classList.remove('hidden-state');
-                window.resetSetupUI();
-            }
+            isProcessing = false;
+            if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
+            else { window.showOfflineSetup(); window.resetSetupUI(); }
         };
 
         window.updateOnlineTimeDisplay = (val) => { config.timeLimit = parseInt(val); document.getElementById('onlineTimeDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-
-        function enterOnlineSetup() {
-            hideAll();
-            document.getElementById('setup-screen').classList.remove('hidden-state');
-            document.getElementById('setup-options').classList.add('hidden-state'); 
-        }
-
+        function enterOnlineSetup() { hideAll(); document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.add('hidden-state'); }
         window.setMode = (m) => {
             config.mode = m;
             document.getElementById('btn-m1p').className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${m==='1p'?'bg-cyan-600':'bg-white/5'}`;
@@ -809,21 +696,12 @@
             document.getElementById('lbl-p2-stat').innerText = m === '1p' ? 'CPU PERCENT' : '2P PERCENT';
             window.resetSetupUI();
         };
-
-        window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
+        window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
+        window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-
-        window.resetSetupUI = () => { 
-            setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
-        };
-
-        window.updateSetupUI = () => { 
-            const btn = document.getElementById('start-btn'); 
-            btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START"); window.checkReady(); 
-        }
-
+        window.resetSetupUI = () => { setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); };
+        window.updateSetupUI = () => { const btn = document.getElementById('start-btn'); btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START"); window.checkReady(); }
         window.renderSetupSlots = () => {
             const container = document.getElementById('setup-slots'); container.innerHTML = '';
             const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret;
@@ -833,7 +711,6 @@
                 container.appendChild(div);
             });
         }
-
         window.renderSetupKeypad = () => {
             const container = document.getElementById('setup-keypad'); container.innerHTML = '';
             const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret;
@@ -844,106 +721,65 @@
                 container.appendChild(btn);
             }
         }
-
         window.backspaceSetup = () => {
             const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret;
             for (let i = config.digits - 1; i >= 0; i--) { if (target[i] !== null) { target[i] = null; activeIdx = i; break; } }
             sfx.delete(); window.renderSetupSlots(); window.renderSetupKeypad(); window.checkReady();
         };
-
         window.randomizeSetup = () => { const target = genRandArr(config.digits); if (setupState.phase === 'p1') setupState.p1Secret = target; else setupState.p2Secret = target; sfx.launch(); activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.checkReady(); }
-        
-        window.checkReady = () => { 
-            const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret; 
-            const isFull = !target.includes(null); 
-            const btn = document.getElementById('start-btn'); 
-            btn.disabled = !isFull; btn.style.opacity = isFull ? "1" : "0.5"; 
-        }
-
+        window.checkReady = () => { const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret; const isFull = !target.includes(null); const btn = document.getElementById('start-btn'); btn.disabled = !isFull; btn.style.opacity = isFull ? "1" : "0.5"; }
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
-                sfx.launch(); 
-                document.getElementById('start-btn').classList.add('hidden'); 
-                document.getElementById('online-waiting-info').classList.remove('hidden');
-                
+                sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
                 if(myPlayerNum === 1) hostReady = true; else guestReady = true;
-                
-                if(conn && conn.open) {
-                    conn.send({ type: 'ready', secret: setupState.p1Secret });
-                }
+                if(conn && conn.open) conn.send({ type: 'ready', secret: setupState.p1Secret });
                 checkOnlineStart();
-
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
-            } else {
-                startGame();
-            }
+            } else { startGame(); }
         };
 
         function startGameOnline() {
             document.getElementById('p1-panel-label').innerText = myUserName;
             document.getElementById('p2-name-label').innerText = partnerName;
-            
-            // ゲストはホストの設定に従う
-            if(myPlayerNum === 1) {
-                config.showP1Stats = document.getElementById('onlineStatsToggle').checked;
-                config.showP2Stats = config.showP1Stats;
-            }
+            if(myPlayerNum === 1) { config.showP1Stats = document.getElementById('onlineStatsToggle').checked; config.showP2Stats = config.showP1Stats; }
             startGameUI();
         }
 
         function startGame() { 
             config.showP1Stats = document.getElementById('p1StatsToggle').checked;
             config.showP2Stats = document.getElementById('p2StatsToggle').checked;
-
             p1Secret = [...setupState.p1Secret]; 
             p2Secret = config.mode === '1p' ? genRandArr(config.digits) : [...setupState.p2Secret]; 
             currentPlayer = 1; turn = 1; 
-            
             document.getElementById('p1-panel-label').innerText = "1P";
             document.getElementById('p2-name-label').innerText = config.mode === '1p' ? "CPU" : "2P";
-            
             startGameUI(); 
         }
 
         function startGameUI() {
             sfx.launch(); allPerms = genPerms(config.digits); p1Knowledge = [...allPerms]; p2Knowledge = [...allPerms];
-            
             const showP1 = config.mode === 'online' ? config.showP1Stats : config.showP1Stats;
             const showP2 = config.mode === 'online' ? config.showP1Stats : config.showP2Stats;
-            
             document.getElementById('playerStatBox').style.display = showP1 ? 'block' : 'none'; 
             document.getElementById('cpuStatBox').style.display = showP2 ? 'block' : 'none';
-            
-            const secretDisplay = document.getElementById('secret-code-display');
-            if (config.mode === '1p') { 
-                secretDisplay.classList.remove('hidden'); 
-                document.getElementById('displayMySecretBig').innerText = p1Secret.join(''); 
-            } else { 
-                secretDisplay.classList.add('hidden'); 
-            }
-            hideAll();
-            document.getElementById('game-screen').classList.remove('hidden-state'); 
-            document.getElementById('exitBtn').classList.remove('hidden'); 
-            document.getElementById('turn-display').classList.remove('hidden-state');
+            if (config.mode === '1p') { document.getElementById('secret-code-display').classList.remove('hidden'); document.getElementById('displayMySecretBig').innerText = p1Secret.join(''); }
+            else { document.getElementById('secret-code-display').classList.add('hidden'); }
+            hideAll(); document.getElementById('game-screen').classList.remove('hidden-state'); 
+            document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
             p1WonThisTurn = false; isProcessing = false; initTurn();
         }
 
         function initTurn() {
+            isProcessing = false; // UIロック解除
             currentGuess = Array(config.digits).fill(null); activeIdx = 0; document.getElementById('turnCounter').innerText = turn;
-            
-            let isMyTurn = true;
-            if (config.mode === 'online') isMyTurn = (currentPlayer === myPlayerNum);
-            else if (config.mode === '2p') isMyTurn = true; // Local 2P
-            
+            let isMyTurn = config.mode === 'online' ? (currentPlayer === myPlayerNum) : true;
             const indicator = document.getElementById('turn-indicator-text');
             indicator.innerText = isMyTurn ? 'YOUR TURN' : 'ENEMY TURN'; 
             indicator.style.color = currentPlayer === 1 ? 'var(--neon-blue)' : 'var(--neon-pink)';
-            
             document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisTurn);
             document.getElementById('input-controls').classList.toggle('hidden', !isMyTurn); 
             document.getElementById('waiting-opponent-msg').classList.toggle('hidden', isMyTurn);
-            
             window.renderGameSlots(); window.renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -960,9 +796,19 @@
         window.renderGameKeypad = () => {
             const container = document.getElementById('gameKeypad'); container.innerHTML = '';
             for(let i=0; i<=9; i++) {
-                const btn = document.createElement('button'); btn.className = "py-2.5 bg-white/5 border border-white/10 rounded-lg text-base hover:bg-white/10 active:scale-95 transition-all disabled:opacity-10 font-bold";
-                btn.innerText = i; btn.disabled = currentGuess.includes(i) || isProcessing;
-                btn.onclick = () => { sfx.tap(); currentGuess[activeIdx] = i; let next = currentGuess.indexOf(null); if(next !== -1) activeIdx = next; window.renderGameSlots(); window.renderGameKeypad(); };
+                const btn = document.createElement('button'); 
+                btn.className = "py-2.5 bg-white/5 border border-white/10 rounded-lg text-base hover:bg-white/10 active:scale-95 transition-all disabled:opacity-10 font-bold";
+                btn.innerText = i; 
+                // スロットが空いているか、現在のスロットの数字を変更する場合のみ有効
+                const isAlreadyUsed = currentGuess.includes(i);
+                const isCurrentValue = currentGuess[activeIdx] === i;
+                btn.disabled = (isAlreadyUsed && !isCurrentValue) || isProcessing;
+                btn.onclick = () => { 
+                    sfx.tap(); currentGuess[activeIdx] = i; 
+                    let next = currentGuess.indexOf(null); 
+                    if(next !== -1) activeIdx = next; 
+                    window.renderGameSlots(); window.renderGameKeypad(); 
+                };
                 container.appendChild(btn);
             }
         }
@@ -970,77 +816,51 @@
         window.playerAction = async () => {
             if (isProcessing) return;
             isProcessing = true; clearInterval(gameTimerInterval); sfx.launch();
-            
-            let targetS;
-            if (config.mode === 'online') targetS = myPlayerNum === 1 ? p2Secret : p1Secret;
-            else targetS = currentPlayer === 1 ? p2Secret : p1Secret;
-            
+            let targetS = config.mode === 'online' ? (myPlayerNum === 1 ? p2Secret : p1Secret) : (currentPlayer === 1 ? p2Secret : p1Secret);
             const res = checkResult(currentGuess, targetS);
             const guessCopy = [...currentGuess];
+            if(config.mode === 'online' && conn && conn.open) conn.send({ type: 'action', guess: guessCopy, res: res });
             
-            if(config.mode === 'online' && conn && conn.open) {
-                conn.send({ type: 'action', guess: guessCopy, res: res });
-            }
-            
-            // Local Processing
             if (currentPlayer === 1 || (config.mode === 'online' && myPlayerNum === 1)) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guessCopy.join(''), res, currentPlayer); 
-                addLog('player', guessCopy, res);
+                await showAnnounce(guessCopy.join(''), res, currentPlayer); addLog('player', guessCopy, res);
             } else {
                 p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guessCopy.join(''), res, currentPlayer); 
-                addLog('cpu', guessCopy, res);
+                await showAnnounce(guessCopy.join(''), res, currentPlayer); addLog('cpu', guessCopy, res);
             }
             
-            if (res.hits === config.digits) p1WonThisTurn = true;
-            
             if (res.hits === config.digits) {
-                if(config.mode === 'online') endGame("YOU WIN", "Code Solved!");
-                else endGame(currentPlayer === 1 ? "1P WIN" : "2P WIN", "Code Solved!");
+                endGame(currentPlayer === 1 ? (config.mode === 'online' ? "YOU WIN" : "1P WIN") : "ENEMY WIN", "Code Solved!");
                 return;
             }
 
             if (config.mode === '1p') { 
                 const cpuWon = await cpuTurn(); 
                 if (cpuWon) endGame("ENEMY WIN", "CPU Solved it!");
-                else { turn++; isProcessing = false; initTurn(); }
+                else { turn++; initTurn(); }
             } else { 
                 currentPlayer = currentPlayer === 1 ? 2 : 1; 
-                isProcessing = false; 
+                if (config.mode !== 'online') turn++;
                 initTurn(); 
             }
         };
 
-        window.handleRemoteAction = async (actionData) => {
+        window.handleRemoteAction = async (data) => {
             isProcessing = true; clearInterval(gameTimerInterval);
-            const res = actionData.res; 
-            const remoteP = myPlayerNum === 1 ? 2 : 1;
-            
+            const res = data.res; const remoteP = myPlayerNum === 1 ? 2 : 1;
             if (remoteP === 2) {
-                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(actionData.guess.join(''), res, remoteP); 
-                addLog('cpu', actionData.guess, res);
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(data.guess.join(''), res, remoteP); addLog('cpu', data.guess, res);
             } else {
-                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(actionData.guess.join(''), res, remoteP); 
-                addLog('player', actionData.guess, res);
+                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(data.guess.join(''), res, remoteP); addLog('player', data.guess, res);
             }
-            
-            if (res.hits === config.digits) {
-                endGame("ENEMY WIN", "Partner Solved it!");
-                return;
-            }
-
-            currentPlayer = myPlayerNum;
-            turn++;
-            isProcessing = false;
-            initTurn();
+            if (res.hits === config.digits) { endGame("ENEMY WIN", "Partner Solved it!"); return; }
+            currentPlayer = myPlayerNum; turn++; initTurn();
         }
 
         async function cpuTurn() {
             await new Promise(r => setTimeout(r, 1000));
-            // CPU Logic: Hard uses deduction only from p2Knowledge, without peeking at p1Secret
             let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : allPerms[Math.floor(Math.random() * allPerms.length)];
             const res = checkResult(guess, p1Secret); 
             p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
@@ -1048,7 +868,7 @@
         }
 
         function endGame(title, body) { 
-            clearInterval(gameTimerInterval); 
+            clearInterval(gameTimerInterval); isProcessing = false;
             document.getElementById('result-title').innerText = title; 
             document.getElementById('result-body').innerText = body; 
             document.getElementById('overlay').classList.remove('hidden-state'); 
@@ -1057,31 +877,29 @@
 
         async function showAnnounce(num, res, player) {
             return new Promise(resolve => {
-                const announce = document.getElementById('big-announce'); const bigNum = document.getElementById('big-number'), bigRes = document.getElementById('big-result'), bigP = document.getElementById('big-player');
-                bigNum.innerText = num; bigRes.innerHTML = `<span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span>`;
-                
-                if (config.mode === 'online') {
-                    bigP.innerText = player === myPlayerNum ? "YOU" : "PARTNER";
-                } else {
-                    bigP.innerText = player === 1 ? "1P" : (config.mode === '1p' ? "CPU" : "2P");
-                }
-                
+                const announce = document.getElementById('big-announce');
+                document.getElementById('big-number').innerText = num;
+                document.getElementById('big-result').innerHTML = `<span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span>`;
+                document.getElementById('big-player').innerText = config.mode === 'online' ? (player === myPlayerNum ? "YOU" : "PARTNER") : (player === 1 ? "1P" : (config.mode === '1p' ? "CPU" : "2P"));
                 announce.classList.add('show'); sfx.scan();
                 setTimeout(() => { announce.classList.remove('show'); setTimeout(resolve, 300); }, 1000);
             });
         }
 
         function addLog(who, guess, res) {
-            const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory'); const item = document.createElement('div');
+            const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory');
+            const item = document.createElement('div');
             item.className = "flex justify-between items-center p-1.5 bg-white/5 border border-white/5 rounded mb-1";
             item.innerHTML = `<span class="font-mono text-[11px] tracking-widest ${who==='player'?'text-cyan-400':'text-pink-500'} font-bold">${guess.join('')}</span><span class="text-[10px]"><span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span></span>`;
             list.appendChild(item); list.scrollTop = list.scrollHeight;
         }
 
         function updateStatsUI() {
-            const p1Len = p1Knowledge.length, p2Len = p2Knowledge.length;
-            document.getElementById('playerRemaining').innerText = p1Len.toLocaleString(); document.getElementById('playerProb').innerText = (100 / p1Len).toFixed(2) + "%";
-            document.getElementById('cpuRemaining').innerText = p2Len.toLocaleString(); document.getElementById('cpuProb').innerText = (100 / p2Len).toFixed(2) + "%";
+            const p1Len = p1Knowledge.length || 1, p2Len = p2Knowledge.length || 1;
+            document.getElementById('playerRemaining').innerText = p1Len.toLocaleString(); 
+            document.getElementById('playerProb').innerText = (100 / p1Len).toFixed(2) + "%";
+            document.getElementById('cpuRemaining').innerText = p2Len.toLocaleString(); 
+            document.getElementById('cpuProb').innerText = (100 / p2Len).toFixed(2) + "%";
         }
 
         function startTimer() {
@@ -1093,11 +911,10 @@
         function genRandArr(n) { const arr = []; while(arr.length < n) { let r = Math.floor(Math.random()*10); if(!arr.includes(r)) arr.push(r); } return arr; }
         function genPerms(n) { const res = []; function bt(cur) { if(cur.length === n) { res.push([...cur]); return; } for(let i=0; i<=9; i++) { if(!cur.includes(i)) { cur.push(i); bt(cur); cur.pop(); } } } bt([]); return res; }
         
-        window.randomizeGuess = () => { currentGuess = genRandArr(config.digits); activeIdx = 0; sfx.launch(); window.renderGameSlots(); window.renderGameKeypad(); }
-        window.clearCurrentGuess = () => { currentGuess = Array(config.digits).fill(null); activeIdx = 0; sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
-        window.backspaceGuess = () => { for (let i = config.digits - 1; i >= 0; i--) { if (currentGuess[i] !== null) { currentGuess[i] = null; activeIdx = i; break; } } sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
+        window.randomizeGuess = () => { if(isProcessing) return; currentGuess = genRandArr(config.digits); activeIdx = 0; sfx.launch(); window.renderGameSlots(); window.renderGameKeypad(); }
+        window.clearCurrentGuess = () => { if(isProcessing) return; currentGuess = Array(config.digits).fill(null); activeIdx = 0; sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
+        window.backspaceGuess = () => { if(isProcessing) return; for (let i = config.digits - 1; i >= 0; i--) { if (currentGuess[i] !== null) { currentGuess[i] = null; activeIdx = i; break; } } sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
 
-        // --- STAR BACKGROUND ---
         window.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('starCanvas'); const ctx = canvas.getContext('2d'); let stars = [];
             const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; createStars(); };
@@ -1105,20 +922,11 @@
             function anim() { 
                 ctx.clearRect(0,0,canvas.width,canvas.height); 
                 ctx.fillStyle = "white"; 
-                stars.forEach(s => { 
-                    s.y += s.v; 
-                    if(s.y > canvas.height) s.y = 0; 
-                    ctx.globalAlpha = 0.5; 
-                    ctx.fillRect(s.x, s.y, s.s, s.s); 
-                }); 
+                stars.forEach(s => { s.y += s.v; if(s.y > canvas.height) s.y = 0; ctx.globalAlpha = 0.5; ctx.fillRect(s.x, s.y, s.s, s.s); }); 
                 requestAnimationFrame(anim); 
             }
-            window.addEventListener('resize', resize);
-            resize();
-            anim();
-            
-            updateMuteIcon('bgm', false);
-            updateMuteIcon('se', false);
+            window.addEventListener('resize', resize); resize(); anim();
+            updateMuteIcon('bgm', false); updateMuteIcon('se', false);
         });
     </script>
 </body>

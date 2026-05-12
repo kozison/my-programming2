@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hit&Blow</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+    <!-- Firebase SDKs (Compat versions) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --space-black: #020205;
@@ -21,8 +21,7 @@
 
         body {
             margin: 0;
-            background: 
-                radial-gradient(circle at center, var(--nebula-blue) 0%, var(--space-navy) 40%, #080410 80%, var(--space-black) 100%);
+            background: radial-gradient(circle at center, var(--nebula-blue) 0%, var(--space-navy) 40%, #080410 80%, var(--space-black) 100%);
             color: #e0f7fa;
             font-family: 'Segoe UI', sans-serif;
             height: 100vh;
@@ -30,12 +29,7 @@
             user-select: none;
         }
 
-        .stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
 
         .glass-panel {
             background: rgba(255, 255, 255, 0.05);
@@ -45,16 +39,11 @@
         }
 
         .slot {
-            width: 32px;
-            height: 44px;
+            width: 30px; height: 40px;
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 6px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
             background: rgba(0, 0, 0, 0.5);
         }
 
@@ -66,198 +55,136 @@
         }
 
         .history-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 2px;
-            display: flex;
-            flex-direction: column; gap: 3px;
+            flex-grow: 1; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 2px;
         }
 
         #big-announce {
-            position: fixed;
-            top: 50%; left: 50%;
+            position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.5);
-            z-index: 100;
-            pointer-events: none;
-            opacity: 0;
-            text-align: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100; pointer-events: none; opacity: 0;
+            text-align: center; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        #big-announce.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
-        }
+        #big-announce.show { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 
         .hit { color: #ffeb3b; font-weight: bold; }
         .blow { color: var(--neon-blue); font-weight: bold; }
 
         .btn-launch {
             background: linear-gradient(135deg, #0072ff, #00d4ff);
-            color: black;
-            font-weight: bold;
+            color: black; font-weight: bold;
         }
-
-        .btn-launch:disabled {
-            opacity: 0.2;
-            filter: grayscale(1);
-        }
+        .btn-launch:disabled { opacity: 0.2; filter: grayscale(1); }
 
         .btn-mini {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: 0.2s;
         }
+        .btn-mini:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); border-color: var(--neon-blue); }
 
-        .btn-mini:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: var(--neon-blue);
-        }
-
-        input[type="range"] {
-            accent-color: var(--neon-blue);
-            cursor: pointer;
-            height: 4px;
-        }
+        input[type="range"] { accent-color: var(--neon-blue); cursor: pointer; height: 3px; }
 
         .hidden-state { display: none !important; }
 
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
 
-        .stat-box {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 6px;
-            padding: 4px;
-            text-align: center;
-        }
-
-        .custom-checkbox {
-            width: 14px;
-            height: 14px;
-            cursor: pointer;
-            accent-color: var(--neon-blue);
-        }
-
-        .vol-label {
-            width: 20px;
-            text-align: right;
-            font-family: monospace;
-            font-size: 9px;
-            color: var(--neon-blue);
-        }
-
-        .turn-indicator {
-            font-size: 0.7rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 4px; text-align: center; }
 
         .menu-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.2rem;
-            border-radius: 10px;
-            transition: all 0.3s;
-            text-align: left;
-            width: 100%;
+            padding: 1rem; border-radius: 10px;
+            transition: all 0.3s; text-align: left; width: 100%;
         }
+        .menu-btn:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); transform: translateY(-1px); }
 
         .input-dark {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 6px;
-            border-radius: 5px;
-            color: white;
-            outline: none;
-            font-size: 0.9rem;
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px; border-radius: 6px; color: white; outline: none; font-size: 0.85rem;
         }
 
-        .error-msg {
-            color: #ff4444;
-            font-size: 9px;
-            height: 12px;
-            margin-top: 1px;
-            font-weight: bold;
-        }
+        .error-msg { color: #ff5252; font-size: 9px; margin-top: 1px; height: 12px; font-weight: bold; overflow: hidden; }
 
-        #loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(5px);
-        }
-
-        /* 全体的なコンパクト化のための調整 */
-        .compact-container {
+        .compact-view {
             max-height: 95vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px;
         }
+        
+        .mute-btn {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .mute-btn:hover { opacity: 1; }
     </style>
 </head>
 <body class="flex flex-col h-screen" onclick="handleUserInteraction()">
 
     <canvas class="stars" id="starCanvas"></canvas>
 
-    <!-- LOADING -->
-    <div id="loading-overlay" class="hidden-state">
+    <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
-            <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-            <p id="loading-text" class="text-[9px] tracking-widest uppercase opacity-60">Loading...</p>
+            <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
+            <p class="text-[9px] tracking-widest uppercase opacity-60">Syncing...</p>
         </div>
     </div>
 
-    <!-- ANNOUNCE -->
     <div id="big-announce">
-        <div id="big-number" class="text-6xl font-mono tracking-widest mb-1 text-white">----</div>
-        <div id="big-result" class="text-3xl font-bold">0H 0B</div>
-        <div id="big-player" class="text-sm tracking-widest opacity-80 mt-2 uppercase">PLAYER 1</div>
+        <div id="big-number" class="text-5xl font-mono tracking-widest mb-1 text-white">----</div>
+        <div id="big-result" class="text-2xl font-bold">0H 0B</div>
+        <div id="big-player" class="text-[10px] tracking-widest opacity-80 mt-1 uppercase">PLAYER 1</div>
     </div>
 
     <!-- HEADER -->
-    <header class="flex justify-between items-center p-2 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
+    <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
-            <div id="timer-box" class="hidden flex flex-col">
-                <span class="text-[8px] opacity-40 tracking-widest uppercase">TIME</span>
-                <span id="gameTimer" class="text-lg font-mono text-cyan-400 font-bold leading-none">♾️</span>
-            </div>
-            <div id="turn-display" class="hidden text-xs tracking-widest opacity-60">ROUND: <span id="turnCounter" class="text-cyan-400">1</span></div>
+            <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
+            <div id="timer-box" class="hidden"><span id="gameTimer">♾️</span></div>
         </div>
         
         <div class="flex items-center gap-2">
             <div class="flex items-center gap-2 bg-white/5 px-2 py-1 rounded-full border border-white/10">
-                <button onclick="resetAudio()" class="text-[7px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors uppercase font-bold mr-1">RESET</button>
-                <span class="text-[8px] opacity-50 uppercase">BGM</span>
-                <input type="range" id="bgmVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="updateVolume('bgm', this.value)">
-                <span id="bgmLabel" class="vol-label">50</span>
+                <button onclick="resetAudio()" class="text-[7px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-1 uppercase">Reset</button>
+                
+                <div class="flex items-center gap-1">
+                    <span class="text-[8px] opacity-50 uppercase">BGM</span>
+                    <div id="bgmMuteIcon" class="mute-btn" onclick="toggleMute('bgm')">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>
+                    </div>
+                </div>
+                <input type="range" id="bgmVolume" min="0" max="1" step="0.01" value="0.5" class="w-10" oninput="updateVolume('bgm', this.value)">
+                <span id="bgmLabel" class="text-[9px] w-4 text-right inline-block text-cyan-400 font-mono">50</span>
+                
                 <div class="w-[1px] h-3 bg-white/10 mx-1"></div>
-                <span class="text-[8px] opacity-50 uppercase">SE</span>
-                <input type="range" id="seVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="updateVolume('se', this.value)">
-                <span id="seLabel" class="vol-label">50</span>
+                
+                <div class="flex items-center gap-1">
+                    <span class="text-[8px] opacity-50 uppercase">SE</span>
+                    <div id="seMuteIcon" class="mute-btn" onclick="toggleMute('se')">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>
+                    </div>
+                </div>
+                <input type="range" id="seVolume" min="0" max="1" step="0.01" value="0.5" class="w-10" oninput="updateVolume('se', this.value)">
+                <span id="seLabel" class="text-[9px] w-4 text-right inline-block text-cyan-400 font-mono">50</span>
             </div>
-            <button id="exitBtn" onclick="handleSmartExit()" class="hidden text-[8px] border border-white/10 px-2 py-1 rounded-full hover:bg-red-900/20">EXIT</button>
+            <button id="exitBtn" onclick="handleSmartExit()" class="hidden text-[8px] border border-white/10 px-2 py-1 rounded-full hover:bg-red-900/20 font-bold uppercase">Exit</button>
         </div>
     </header>
 
     <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
-        <div class="max-w-md w-full space-y-4">
-            <h1 class="text-5xl font-bold tracking-[0.2em] text-center mb-10 uppercase text-cyan-400"><b>Hit&Blow</b></h1>
+        <div class="max-w-[280px] w-full space-y-4">
+            <h1 class="text-5xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic">Hit&Blow</h1>
             
             <button onclick="showOfflineSetup()" class="menu-btn group">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-white group-hover:text-cyan-400">OFFLINE 👤🤖</h2>
-                        <p class="text-[10px] opacity-50 uppercase tracking-widest mt-1">1P VS CPU / 1P VS 2P</p>
+                        <h2 class="text-lg font-bold text-white group-hover:text-cyan-400 uppercase">Offline 👤🤖</h2>
+                        <p class="text-[9px] opacity-50 uppercase tracking-widest mt-1">1P VS CPU / 1P VS 2P</p>
                     </div>
                     <span class="text-2xl">👤🤖</span>
                 </div>
@@ -266,8 +193,8 @@
             <button onclick="showOnlineLobby()" class="menu-btn group">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-white group-hover:text-cyan-400">ONLINE 👥</h2>
-                        <p class="text-[10px] opacity-50 uppercase tracking-widest mt-1">Play with Friend</p>
+                        <h2 class="text-lg font-bold text-white group-hover:text-cyan-400 uppercase">Online 👥</h2>
+                        <p class="text-[9px] opacity-50 uppercase tracking-widest mt-1">Play with Friend</p>
                     </div>
                     <span class="text-2xl">👥</span>
                 </div>
@@ -276,84 +203,75 @@
     </div>
 
     <!-- ONLINE LOBBY -->
-    <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state compact-container">
-        <div class="glass-panel p-4 max-w-2xl w-full space-y-4">
-            <div class="flex justify-between items-center shrink-0">
-                <h1 class="text-lg font-bold tracking-widest uppercase">Online</h1>
-                <button onclick="showMainMenu()" class="text-[10px] opacity-50 hover:opacity-100 uppercase tracking-widest underline">Back</button>
+    <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-2 compact-view">
+        <div class="glass-panel p-4 max-w-xl w-full space-y-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-sm font-bold tracking-widest uppercase">Online Lobby</h1>
+                <button onclick="showMainMenu()" class="text-[9px] opacity-50 hover:opacity-100 uppercase underline">Back</button>
             </div>
 
-            <div class="bg-white/5 p-3 rounded-lg border border-white/10 shrink-0">
+            <div class="bg-white/5 p-3 rounded-lg border border-white/10">
                 <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest">User Name</label>
                 <input type="text" id="user-name-input" maxlength="12" placeholder="My Name" class="w-full input-dark">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Create -->
                 <div class="space-y-3 border-r border-white/10 pr-0 md:pr-4">
-                    <h2 class="text-xs font-bold text-cyan-400 tracking-widest uppercase italic">Create Room</h2>
+                    <h2 class="text-xs font-bold text-cyan-400 uppercase italic">Create Room</h2>
                     <div>
-                        <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest">Room Password</label>
-                        <input type="text" id="create-room-id" placeholder="e.g. 1234" class="w-full input-dark uppercase">
+                        <input type="text" id="create-room-id" placeholder="Password" class="w-full input-dark uppercase">
                         <p id="create-error" class="error-msg hidden"></p>
                     </div>
                     <div class="space-y-2">
-                        <label class="block text-[8px] opacity-50 uppercase tracking-widest">Rules</label>
                         <div class="grid grid-cols-3 gap-1">
                             <button onclick="setOnlineDigits(3)" id="obtn-d3" class="py-1 rounded bg-white/5 border border-white/10 text-xs">3</button>
                             <button onclick="setOnlineDigits(4)" id="obtn-d4" class="py-1 rounded bg-cyan-600 border border-white/10 text-xs">4</button>
                             <button onclick="setOnlineDigits(5)" id="obtn-d5" class="py-1 rounded bg-white/5 border border-white/10 text-xs">5</button>
                         </div>
                         <div>
-                            <div class="flex justify-between"><label class="text-[8px] opacity-50 uppercase tracking-widest">Time Limit</label><span id="onlineTimeDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
+                            <div class="flex justify-between"><label class="text-[8px] opacity-50 uppercase font-bold">Time</label><span id="onlineTimeDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
                             <input type="range" id="onlineTimeSlider" min="0" max="300" step="10" value="0" class="w-full" oninput="updateOnlineTimeDisplay(this.value)">
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="onlineStatsToggle" checked class="custom-checkbox">
-                            <label for="onlineStatsToggle" class="text-[8px] opacity-60 uppercase tracking-widest cursor-pointer">Percentage</label>
+                            <input type="checkbox" id="onlineStatsToggle" checked class="w-3 h-3 accent-cyan-400">
+                            <label for="onlineStatsToggle" class="text-[8px] opacity-60 uppercase font-bold cursor-pointer">Percentage</label>
                         </div>
                     </div>
-                    <button onclick="createRoom()" id="create-btn" class="w-full py-1.5 bg-cyan-500 text-black font-bold rounded uppercase text-[10px] tracking-widest">Create</button>
+                    <button onclick="createRoom()" class="w-full py-1.5 bg-cyan-500 text-black font-bold rounded uppercase text-[10px]">Create</button>
                 </div>
 
-                <!-- Join -->
                 <div class="space-y-3">
-                    <h2 class="text-xs font-bold text-pink-500 tracking-widest uppercase italic">Join Room</h2>
+                    <h2 class="text-xs font-bold text-pink-500 uppercase italic">Join Room</h2>
                     <div>
-                        <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest">Input Password</label>
-                        <input type="text" id="join-room-id" placeholder="Enter ID" class="w-full input-dark uppercase">
+                        <input type="text" id="join-room-id" placeholder="ID" class="w-full input-dark uppercase">
                         <p id="join-error" class="error-msg hidden"></p>
                     </div>
-                    
-                    <div id="join-preview" class="hidden p-2 bg-white/5 border border-cyan-500/30 rounded-lg space-y-1">
-                        <div class="flex justify-between items-center"><span class="text-[8px] opacity-50 uppercase font-bold">Found!</span><span class="text-[9px] text-cyan-400 font-mono">ID: <span id="preview-id-text"></span></span></div>
-                        <div class="flex flex-col gap-0.5 text-[9px]">
-                            <div><span class="opacity-50 uppercase">Host:</span> <span id="preview-host-name" class="text-white"></span></div>
-                            <div class="flex gap-3">
-                                <div><span class="opacity-50">D:</span> <span id="preview-digits"></span></div>
-                                <div><span class="opacity-50">T:</span> <span id="preview-time"></span></div>
-                                <div><span class="opacity-50">S:</span> <span id="preview-stats"></span></div>
-                            </div>
+                    <div id="join-preview" class="hidden p-2 bg-white/5 border border-cyan-500/30 rounded-lg space-y-1 text-[9px]">
+                        <div class="font-bold text-cyan-400">Room Found!</div>
+                        <div><span class="opacity-50 uppercase">Host:</span> <span id="preview-host-name"></span></div>
+                        <div class="flex gap-2 text-[8px]">
+                            <div><span class="opacity-50 uppercase">D:</span> <span id="preview-digits"></span></div>
+                            <div><span class="opacity-50 uppercase">T:</span> <span id="preview-time"></span></div>
+                            <div><span class="opacity-50 uppercase">S:</span> <span id="preview-stats"></span></div>
                         </div>
-                        <button onclick="confirmJoin()" class="w-full py-1.5 bg-pink-500 text-white font-bold rounded uppercase text-[10px] tracking-widest">Join</button>
+                        <button onclick="confirmJoin()" class="w-full py-1.5 bg-pink-500 text-white font-bold rounded mt-1">JOIN</button>
                     </div>
-
-                    <button onclick="searchRoom()" id="search-btn" class="w-full py-1.5 border border-white/20 rounded hover:bg-white/5 uppercase text-[10px] tracking-widest">Search</button>
+                    <button id="search-btn" onclick="searchRoom()" class="w-full py-1.5 border border-white/20 rounded uppercase text-[10px] font-bold">Search</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- SETUP SCREEN -->
-    <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state compact-container">
+    <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-2 compact-view">
         <div class="glass-panel p-4 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-3 border-b border-white/10 pb-1 shrink-0">
+            <div class="flex justify-between items-center mb-3 border-b border-white/10 pb-1">
                 <h1 class="text-lg font-bold tracking-widest uppercase">Setup</h1>
-                <button onclick="handleSmartBackFromSetup()" class="text-[10px] opacity-50 hover:opacity-100 uppercase tracking-widest underline">Back</button>
+                <button onclick="handleSmartBackFromSetup()" class="text-[10px] opacity-50 hover:opacity-100 uppercase underline font-bold">Back</button>
             </div>
             
-            <div id="setup-waiting-msg" class="hidden text-center mb-3 p-1.5 bg-cyan-900/30 rounded border border-cyan-500/20 shrink-0">
-                <p class="text-[9px] tracking-widest animate-pulse">Wait for partner...</p>
+            <div id="setup-waiting-msg" class="hidden text-center mb-3 p-1.5 bg-cyan-900/30 rounded border border-cyan-500/20">
+                <p class="text-[9px] tracking-widest animate-pulse font-bold uppercase">Wait for partner...</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,15 +300,13 @@
                         </div>
                     </div>
                     <div>
-                        <div class="flex justify-between"><label class="text-[8px] opacity-50 uppercase tracking-widest">Time</label><span id="timeLimitDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
+                        <div class="flex justify-between"><label class="text-[8px] opacity-50 uppercase font-bold">Time Limit</label><span id="timeLimitDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
                         <input type="range" id="timeLimitSlider" min="0" max="300" step="10" value="0" class="w-full" oninput="updateTimeSetting(this.value)">
                     </div>
                 </div>
 
                 <div class="flex flex-col justify-center">
-                    <div class="flex justify-between items-center mb-1">
-                        <label id="setup-label" class="text-[8px] opacity-50 tracking-widest uppercase font-bold">Secret Code</label>
-                    </div>
+                    <label id="setup-label" class="text-[8px] opacity-50 uppercase font-bold mb-1">Secret Code</label>
                     <div id="setup-slots" class="flex justify-center gap-1 mb-2"></div>
                     <div id="setup-keypad" class="grid grid-cols-5 gap-1 mb-2"></div>
                     <div class="grid grid-cols-3 gap-1 mb-2">
@@ -398,8 +314,8 @@
                         <button onclick="backspaceSetup()" class="py-1 btn-mini rounded text-xs">⌫</button>
                         <button onclick="resetSetup()" class="py-1 btn-mini rounded text-xs text-red-400">🗑️</button>
                     </div>
-                    <button id="start-btn" onclick="handleStartOrNext()" disabled class="w-full py-2 bg-cyan-500 text-black font-bold rounded-lg opacity-50 cursor-not-allowed text-[11px] uppercase tracking-widest transition-all">Ready</button>
-                    <p id="online-waiting-info" class="hidden text-[8px] text-center mt-1 opacity-50 animate-pulse uppercase tracking-widest font-bold">Waiting for Partner...</p>
+                    <button id="start-btn" onclick="handleStartOrNext()" disabled class="w-full py-2 bg-cyan-500 text-black font-bold rounded-lg opacity-50 text-[11px] uppercase tracking-widest">Ready</button>
+                    <p id="online-waiting-info" class="hidden text-[8px] text-center mt-1 opacity-50 animate-pulse font-bold uppercase">Wait Partner...</p>
                 </div>
             </div>
         </div>
@@ -408,91 +324,78 @@
     <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
-            <!-- YOU PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
-                <h3 id="p1-panel-label" class="text-center text-[9px] font-bold opacity-60 mb-1 tracking-widest uppercase border-b border-white/10 pb-1">YOU</h3>
+                <h3 id="p1-panel-label" class="text-center text-[9px] font-bold opacity-60 mb-1 border-b border-white/10 pb-1 uppercase tracking-widest">YOU</h3>
                 <div class="history-list" id="playerHistory"></div>
                 <div id="playerStatBox" class="mt-1 stat-box shrink-0">
-                    <div class="text-[7px] opacity-40 uppercase tracking-widest">PATTERNS</div>
-                    <div id="playerRemaining" class="text-base font-mono text-cyan-400 leading-none">---</div>
-                    <div class="text-[7px] opacity-40 uppercase tracking-widest mt-0.5">PROBABILITY</div>
-                    <div id="playerProb" class="text-base font-mono text-cyan-400 leading-none">0%</div>
+                    <div class="text-[7px] opacity-40 uppercase">PATTERNS</div>
+                    <div id="playerRemaining" class="text-sm font-mono text-cyan-400 leading-none">---</div>
+                    <div id="playerProb" class="text-[10px] font-mono text-cyan-400">0%</div>
                 </div>
             </div>
 
-            <!-- CENTER CONTROLS -->
             <div class="flex flex-col w-2/4 gap-2">
                 <div class="glass-panel p-2 flex-1 flex flex-col justify-center relative">
-                    <button onclick="handleSmartExit()" class="absolute top-1 right-2 text-[8px] opacity-30 hover:opacity-100 uppercase tracking-widest">Back</button>
-                    
-                    <div class="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
-                        <div class="text-center mb-2">
-                            <p id="game-input-label" class="text-[8px] opacity-40 mb-1 tracking-widest uppercase">Guess</p>
-                            <div class="flex justify-center gap-1" id="inputSlots"></div>
+                    <button onclick="handleSmartExit()" class="absolute top-1 right-2 text-[8px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold">Back</button>
+                    <div class="text-center mb-2">
+                        <p id="game-input-label" class="text-[8px] opacity-40 mb-1 uppercase font-bold">Guess</p>
+                        <div class="flex justify-center gap-1" id="inputSlots"></div>
+                    </div>
+                    <div id="input-controls" class="space-y-1.5 max-w-[200px] mx-auto w-full">
+                        <div class="grid grid-cols-5 gap-1" id="gameKeypad"></div>
+                        <div class="grid grid-cols-4 gap-1">
+                            <button onclick="randomizeGuess()" class="py-1.5 btn-mini rounded-lg text-xs">🎲</button>
+                            <button onclick="backspaceGuess()" class="py-1.5 btn-mini rounded-lg text-xs">⌫</button>
+                            <button onclick="clearCurrentGuess()" class="py-1.5 btn-mini rounded-lg text-xs text-red-400">🗑️</button>
+                            <button id="launchBtn" onclick="playerAction()" disabled class="btn-launch rounded-lg text-[9px] uppercase font-bold">Launch</button>
                         </div>
-                        
-                        <div id="input-controls" class="space-y-1.5">
-                            <div class="grid grid-cols-5 gap-1" id="gameKeypad"></div>
-                            <div class="grid grid-cols-4 gap-1">
-                                <button onclick="randomizeGuess()" class="py-1.5 btn-mini rounded-lg text-xs">🎲</button>
-                                <button onclick="backspaceGuess()" class="py-1.5 btn-mini rounded-lg text-xs">⌫</button>
-                                <button onclick="clearCurrentGuess()" class="py-1.5 btn-mini rounded-lg text-xs text-red-400">🗑️</button>
-                                <button id="launchBtn" onclick="playerAction()" disabled class="btn-launch rounded-lg text-[9px] tracking-widest uppercase">Launch</button>
-                            </div>
-                        </div>
-                        <div id="waiting-opponent-msg" class="hidden text-center py-2 bg-white/5 rounded-lg border border-white/10">
-                            <p class="text-[9px] tracking-widest animate-pulse text-cyan-400 uppercase italic">Wait...</p>
-                        </div>
+                    </div>
+                    <div id="waiting-opponent-msg" class="hidden text-center py-2 bg-white/5 rounded-lg border border-white/10">
+                        <p class="text-[9px] tracking-widest animate-pulse text-cyan-400 font-bold uppercase italic">Scanning...</p>
                     </div>
                 </div>
                 
                 <div id="bottom-info-panel" class="glass-panel p-1.5 flex flex-col items-center justify-center h-20 border-cyan-500/20 shrink-0">
                     <div id="turn-info-container" class="text-center">
-                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5">Turn</p>
-                        <div id="turn-indicator-text" class="turn-indicator text-xl font-mono turn-active text-cyan-400">YOUR TURN</div>
-                        <div id="p1-victory-flag" class="hidden text-[7px] text-yellow-400 mt-0.5 uppercase tracking-widest">Wait Partner</div>
+                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5 font-bold">Turn</p>
+                        <div id="turn-indicator-text" class="turn-indicator text-xl font-mono turn-active text-cyan-400 font-bold">YOUR TURN</div>
+                        <div id="p1-victory-flag" class="hidden text-[7px] text-yellow-400 mt-0.5 uppercase font-bold">Success! Waiting Partner...</div>
                     </div>
-                    
                     <div id="secret-code-display" class="hidden flex flex-col items-center">
-                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5">Secret</p>
-                        <div id="displayMySecretBig" class="text-3xl font-mono tracking-[0.3rem] text-cyan-500 font-bold leading-none">----</div>
+                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5 font-bold">Secret</p>
+                        <div id="displayMySecretBig" class="text-3xl font-mono tracking-[0.2rem] text-cyan-500 font-bold leading-none">----</div>
                     </div>
                 </div>
             </div>
 
-            <!-- PARTNER PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
-                <h3 id="p2-name-label" class="text-center text-[9px] font-bold opacity-60 mb-1 tracking-widest uppercase border-b border-white/10 pb-1">CPU</h3>
+                <h3 id="p2-name-label" class="text-center text-[9px] font-bold opacity-60 mb-1 border-b border-white/10 pb-1 uppercase tracking-widest">CPU</h3>
                 <div class="history-list" id="cpuHistory"></div>
                 <div id="cpuStatBox" class="mt-1 stat-box shrink-0">
-                    <div class="text-[7px] opacity-40 uppercase tracking-widest text-pink-300">PATTERNS</div>
-                    <div id="cpuRemaining" class="text-base font-mono text-pink-500 leading-none">---</div>
-                    <div class="text-[7px] opacity-40 uppercase tracking-widest mt-0.5 text-pink-300">PROBABILITY</div>
-                    <div id="cpuProb" class="text-base font-mono text-pink-500 leading-none">0%</div>
+                    <div class="text-[7px] opacity-40 uppercase">PATTERNS</div>
+                    <div id="cpuRemaining" class="text-sm font-mono text-pink-500 leading-none">---</div>
+                    <div id="cpuProb" class="text-[10px] font-mono text-pink-500">0%</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- OVERLAY -->
-    <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state">
-        <div class="text-center p-6 glass-panel border-cyan-500 border-2 shadow-2xl">
+    <!-- RESULT OVERLAY -->
+    <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state backdrop-blur-md">
+        <div class="text-center p-6 glass-panel border-cyan-500 border-2 shadow-2xl max-w-xs w-full">
             <h2 id="result-title" class="text-3xl font-bold mb-2 tracking-tighter uppercase italic text-cyan-400">Result</h2>
-            <p id="result-body" class="mb-4 opacity-70 text-xs"></p>
+            <p id="result-body" class="mb-4 opacity-70 text-sm font-bold"></p>
             <button onclick="handleSmartExit()" class="px-6 py-1.5 bg-white text-black font-bold rounded-full hover:bg-cyan-400 transition-all uppercase text-xs">Back</button>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
+    <script>
+        // FIREBASE SETUP
         const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-blow-compact';
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-blow-vfinal-v2';
 
         let user = null;
         let currentRoomId = null;
@@ -501,15 +404,16 @@
         let myUserName = "Guest";
 
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
+            } catch (err) { console.error("Auth Error:", err); }
         };
         initAuth();
-
-        onAuthStateChanged(auth, (u) => { user = u; });
+        auth.onAuthStateChanged(u => { user = u; });
 
         // --- AUDIO ENGINE ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -518,9 +422,12 @@
         masterCompressor.connect(audioCtx.destination);
         const bgmGain = audioCtx.createGain();
         const seGain = audioCtx.createGain();
-        bgmGain.connect(masterCompressor);
-        seGain.connect(masterCompressor);
-        let currentBgmVol = 0.5, currentSeVol = 0.5, isBGMStarted = false, bgmStep = 0;
+        bgmGain.connect(masterCompressor); seGain.connect(masterCompressor);
+        
+        let currentBgmVol = 0.5, currentSeVol = 0.5;
+        let prevBgmVol = 0.5, prevSeVol = 0.5;
+        let isBGMStarted = false, bgmStep = 0;
+        
         bgmGain.gain.setValueAtTime(0, audioCtx.currentTime);
         seGain.gain.setValueAtTime(0, audioCtx.currentTime);
 
@@ -537,7 +444,8 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.01);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.01);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(output);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
@@ -560,10 +468,46 @@
 
         window.updateVolume = (type, val) => {
             const v = parseFloat(val);
-            if (type === 'bgm') { currentBgmVol = v; bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1); document.getElementById('bgmLabel').innerText = Math.round(v * 100); }
-            else { currentSeVol = v; seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1); document.getElementById('seLabel').innerText = Math.round(v * 100); }
+            if (type === 'bgm') {
+                currentBgmVol = v; bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
+                document.getElementById('bgmLabel').innerText = Math.round(v * 100);
+                if(v > 0) prevBgmVol = v;
+                updateMuteIcon('bgm', v === 0);
+            } else {
+                currentSeVol = v; seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
+                document.getElementById('seLabel').innerText = Math.round(v * 100);
+                if(v > 0) prevSeVol = v;
+                updateMuteIcon('se', v === 0);
+            }
         };
-        window.resetAudio = () => { window.updateVolume('bgm', 0.5); window.updateVolume('se', 0.5); sfx.tap(); };
+
+        window.toggleMute = (type) => {
+            if (type === 'bgm') {
+                const targetVol = currentBgmVol > 0 ? 0 : prevBgmVol;
+                document.getElementById('bgmVolume').value = targetVol;
+                window.updateVolume('bgm', targetVol);
+            } else {
+                const targetVol = currentSeVol > 0 ? 0 : prevSeVol;
+                document.getElementById('seVolume').value = targetVol;
+                window.updateVolume('se', targetVol);
+            }
+        };
+
+        function updateMuteIcon(type, isMuted) {
+            const iconId = type === 'bgm' ? 'bgmMuteIcon' : 'seMuteIcon';
+            const icon = document.getElementById(iconId);
+            if (isMuted) {
+                icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="#ff4444"><path d="M19 6.41l-1.41-1.41-5.59 5.59-5.59-5.59-1.41 1.41 5.59 5.59-5.59 5.59 1.41 1.41 5.59-5.59 5.59 5.59 1.41-1.41-5.59-5.59z"/></svg>';
+            } else {
+                icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>';
+            }
+        }
+
+        window.resetAudio = () => {
+            window.updateVolume('bgm', 0.5); document.getElementById('bgmVolume').value = 0.5;
+            window.updateVolume('se', 0.5); document.getElementById('seVolume').value = 0.5;
+            sfx.tap();
+        };
 
         // --- GAME LOGIC ---
         let config = { digits: 4, level: 2, timeLimit: 0, showP1Stats: true, mode: '1p' };
@@ -574,42 +518,57 @@
         let allPerms = [], p1Knowledge = [], p2Knowledge = [];
 
         window.showMainMenu = async () => {
-            if (config.mode === 'online' && myPlayerNum === 1) await disbandRoom();
+            if (config.mode === 'online') await disbandRoom();
             cleanupRoom();
-            document.getElementById('online-lobby').classList.add('hidden-state');
-            document.getElementById('setup-screen').classList.add('hidden-state');
-            document.getElementById('game-screen').classList.add('hidden-state');
-            document.getElementById('overlay').classList.add('hidden-state');
+            document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen, #overlay').forEach(el => el && el.classList.add('hidden-state'));
             document.getElementById('main-menu').classList.remove('hidden-state');
             document.getElementById('exitBtn').classList.add('hidden');
+        };
+
+        window.showOfflineSetup = () => {
+            document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen').forEach(el => el && el.classList.add('hidden-state'));
+            document.getElementById('setup-screen').classList.remove('hidden-state');
+            document.getElementById('setup-options').classList.remove('hidden-state');
+            window.setMode('1p');
+        };
+
+        window.showOnlineLobby = async () => {
+            document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen').forEach(el => el && el.classList.add('hidden-state'));
+            document.getElementById('online-lobby').classList.remove('hidden-state');
+            cleanupRoom();
         };
 
         window.handleSmartBackFromSetup = async () => {
             if (config.mode === 'online') {
                 if (document.getElementById('start-btn').classList.contains('hidden')) {
-                    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                    await updateDoc(roomRef, myPlayerNum === 1 ? { p1Ready: false, p1Secret: null } : { p2Ready: false, p2Secret: null });
+                    const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${currentRoomId}`);
+                    await roomRef.update(myPlayerNum === 1 ? { p1Ready: false, p1Secret: null } : { p2Ready: false, p2Secret: null });
                     document.getElementById('start-btn').classList.remove('hidden');
                     document.getElementById('online-waiting-info').classList.add('hidden');
                     setupState.p1Secret = Array(config.digits).fill(null); activeIdx = 0;
                     renderSetupSlots(); renderSetupKeypad(); updateSetupUI();
                 } else {
                     if (myPlayerNum === 1) await disbandRoom();
-                    showOnlineLobby();
+                    window.showOnlineLobby();
                 }
             } else if (config.mode === '2p' && setupState.phase === 'p2') {
                 setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null);
                 activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); updateSetupUI();
-            } else { showMainMenu(); }
+            } else {
+                showMainMenu();
+            }
         };
 
         window.handleSmartExit = async () => {
+            if (config.mode === 'online') await disbandRoom();
             clearInterval(gameTimerInterval);
             document.getElementById('game-screen').classList.add('hidden-state');
             document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
-            if (config.mode === 'online') { showOnlineLobby(); } else {
+            if (config.mode === 'online') {
+                window.showOnlineLobby();
+            } else {
                 setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null);
                 activeIdx = 0; document.getElementById('setup-screen').classList.remove('hidden-state');
                 document.getElementById('setup-options').classList.remove('hidden-state');
@@ -617,88 +576,93 @@
             }
         };
 
-        async function disbandRoom() {
-            if (currentRoomId) {
-                try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId)); } catch(e) {}
-            }
+        async function disbandRoom() { 
+            if (currentRoomId) { 
+                try { 
+                    const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${currentRoomId}`);
+                    // ゲーム中は削除しないが、それ以外は即削除
+                    const snap = await roomRef.get();
+                    if(snap.exists && snap.data().state !== 'playing') {
+                        await roomRef.delete(); 
+                    }
+                } catch(e) {} 
+            } 
         }
-
-        window.showOfflineSetup = () => {
-            document.getElementById('main-menu').classList.add('hidden-state');
-            document.getElementById('setup-screen').classList.remove('hidden-state');
-            document.getElementById('setup-options').classList.remove('hidden-state');
-            window.setMode('1p');
-        };
-
-        window.showOnlineLobby = () => {
-            document.getElementById('main-menu').classList.add('hidden-state');
-            document.getElementById('online-lobby').classList.remove('hidden-state');
-            cleanupRoom();
-        };
 
         function cleanupRoom() { if (roomUnsubscribe) roomUnsubscribe(); currentRoomId = null; myPlayerNum = null; clearInterval(gameTimerInterval); }
 
         window.updateOnlineTimeDisplay = (val) => { config.timeLimit = parseInt(val); document.getElementById('onlineTimeDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-
-        window.setOnlineDigits = (n) => {
-            config.digits = n;
-            [3,4,5].forEach(v => {
-                const el = document.getElementById(`obtn-d${v}`);
-                if(el) el.className = `py-1 rounded border border-white/10 text-xs ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`;
-            });
-        };
+        window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1 rounded border border-white/10 text-xs ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); };
 
         window.createRoom = async () => {
             const rawId = document.getElementById('create-room-id').value.trim().toUpperCase();
             if(!rawId || !user) return;
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-                const snap = await getDoc(roomRef);
-                if (snap.exists()) return showError('create', 'Already Used');
-                const roomData = {
-                    id: rawId, hostId: user.uid, hostName: myUserName, guestId: null,
-                    config: { digits: config.digits, timeLimit: config.timeLimit, showP1Stats: document.getElementById('onlineStatsToggle').checked, mode: 'online' },
-                    state: 'waiting', p1Ready: false, p2Ready: false, p1Secret: null, p2Secret: null, currentPlayer: 1, turn: 1, lastAction: null
-                };
-                await setDoc(roomRef, roomData); currentRoomId = rawId; myPlayerNum = 1; enterOnlineSetup();
-            } catch (err) {}
+            const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${rawId}`);
+            const snap = await roomRef.get();
+            
+            // 期限切れチェック (1時間 = 3600000ms)
+            if (snap.exists) {
+                const now = Date.now();
+                const lastUpdate = snap.data().updatedAt || 0;
+                if (now - lastUpdate < 3600000) {
+                    return showError('create', 'Already Used');
+                } else {
+                    // 古い部屋を一旦消す
+                    await roomRef.delete();
+                }
+            }
+
+            const roomData = {
+                id: rawId, hostId: user.uid, hostName: myUserName, guestId: null,
+                config: { digits: config.digits, timeLimit: config.timeLimit, showP1Stats: document.getElementById('onlineStatsToggle').checked, mode: 'online' },
+                state: 'waiting', p1Ready: false, p2Ready: false, p1Secret: null, p2Secret: null, 
+                currentPlayer: 1, turn: 1, lastAction: null, updatedAt: Date.now()
+            };
+            await roomRef.set(roomData); currentRoomId = rawId; myPlayerNum = 1; enterOnlineSetup();
         };
 
         window.searchRoom = async () => {
             const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
             if(!rawId) return;
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-                const snap = await getDoc(roomRef);
-                if (!snap.exists()) return showError('join', 'Not Found');
-                const data = snap.data(); if (data.state !== 'waiting') return showError('join', 'Playing...');
-                document.getElementById('preview-id-text').innerText = rawId;
-                document.getElementById('preview-host-name').innerText = data.hostName || "Host";
-                document.getElementById('preview-digits').innerText = data.config.digits;
-                document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
-                document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
-                document.getElementById('join-preview').classList.remove('hidden'); document.getElementById('search-btn').classList.add('hidden');
-            } catch (err) {}
+            const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${rawId}`);
+            const snap = await roomRef.get();
+            if (!snap.exists) return showError('join', 'Not Found');
+            const data = snap.data(); 
+            // 有効期限チェック
+            if (Date.now() - data.updatedAt > 3600000) return showError('join', 'Expired');
+            if (data.state !== 'waiting') return showError('join', 'Playing...');
+            
+            document.getElementById('preview-id-text').innerText = rawId;
+            document.getElementById('preview-host-name').innerText = data.hostName || "Host";
+            document.getElementById('preview-digits').innerText = data.config.digits;
+            document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
+            document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
+            document.getElementById('join-preview').classList.remove('hidden'); document.getElementById('search-btn').classList.add('hidden');
         };
 
         window.confirmJoin = async () => {
             const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-            try { await updateDoc(roomRef, { guestId: user.uid, guestName: myUserName, state: 'setup' }); currentRoomId = rawId; myPlayerNum = 2; enterOnlineSetup(); } catch (err) {}
+            const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${rawId}`);
+            await roomRef.update({ guestId: user.uid, guestName: myUserName, state: 'setup', updatedAt: Date.now() });
+            currentRoomId = rawId; myPlayerNum = 2; enterOnlineSetup();
         };
 
         function enterOnlineSetup() {
-            document.getElementById('online-lobby').classList.add('hidden-state'); document.getElementById('setup-screen').classList.remove('hidden-state');
+            document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen').forEach(el => el && el.classList.add('hidden-state'));
+            document.getElementById('setup-screen').classList.remove('hidden-state');
             document.getElementById('setup-options').classList.add('hidden-state'); listenToRoom();
         }
 
         function listenToRoom() {
             if (!currentRoomId) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            roomUnsubscribe = onSnapshot(roomRef, (snap) => {
-                if (!snap.exists()) { if (myPlayerNum === 2 && !document.getElementById('setup-screen').classList.contains('hidden-state')) showOnlineLobby(); return; }
+            const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${currentRoomId}`);
+            roomUnsubscribe = roomRef.onSnapshot(snap => {
+                if (!snap.exists) { 
+                    if (myPlayerNum === 2 && !document.getElementById('setup-screen').classList.contains('hidden-state')) window.showOnlineLobby(); 
+                    return; 
+                }
                 const data = snap.data(); config = data.config;
                 if (data.state === 'setup') document.getElementById('setup-waiting-msg').classList.add('hidden-state');
                 if (data.state === 'waiting') document.getElementById('setup-waiting-msg').classList.remove('hidden-state');
@@ -720,20 +684,11 @@
             window.resetSetup();
         };
 
-        window.setDigits = (n) => {
-            config.digits = n;
-            [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1 rounded border border-white/10 text-xs ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; });
-            window.resetSetup();
-        };
-
+        window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1 rounded border border-white/10 text-xs ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetup(); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1 rounded border border-white/10 text-[9px] ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
 
-        window.resetSetup = () => {
-            setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null);
-            activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); updateSetupUI();
-        };
-
+        window.resetSetup = () => { setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); updateSetupUI(); };
         function updateSetupUI() { const btn = document.getElementById('start-btn'); btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START"); checkReady(); }
 
         function renderSetupSlots() {
@@ -763,19 +718,15 @@
             sfx.delete(); renderSetupSlots(); renderSetupKeypad(); checkReady();
         };
 
-        window.randomizeSetup = () => {
-            const target = genRandArr(config.digits); if (setupState.phase === 'p1') setupState.p1Secret = target; else setupState.p2Secret = target;
-            sfx.launch(); activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); checkReady();
-        }
-
+        window.randomizeSetup = () => { const target = genRandArr(config.digits); if (setupState.phase === 'p1') setupState.p1Secret = target; else setupState.p2Secret = target; sfx.launch(); activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); checkReady(); }
         function checkReady() { const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret; const isFull = !target.includes(null); const btn = document.getElementById('start-btn'); btn.disabled = !isFull; btn.style.opacity = isFull ? "1" : "0.5"; }
 
         window.handleStartOrNext = async () => {
             if (config.mode === 'online') {
                 sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                await updateDoc(roomRef, myPlayerNum === 1 ? { p1Ready: true, p1Secret: setupState.p1Secret } : { p2Ready: true, p2Secret: setupState.p1Secret });
-                const snap = await getDoc(roomRef); if (snap.data().p1Ready && snap.data().p2Ready) await updateDoc(roomRef, { state: 'playing', currentPlayer: Math.random() > 0.5 ? 1 : 2 });
+                const roomRef = db.doc(`artifacts/${appId}/public/data/rooms/${currentRoomId}`);
+                await roomRef.update(myPlayerNum === 1 ? { p1Ready: true, p1Secret: setupState.p1Secret, updatedAt: Date.now() } : { p2Ready: true, p2Secret: setupState.p1Secret, updatedAt: Date.now() });
+                const snap = await roomRef.get(); if (snap.data().p1Ready && snap.data().p2Ready) await roomRef.update({ state: 'playing', currentPlayer: Math.random() > 0.5 ? 1 : 2, updatedAt: Date.now() });
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; renderSetupSlots(); renderSetupKeypad(); updateSetupUI();
             } else startGame();
@@ -793,10 +744,9 @@
         function startGameUI() {
             sfx.launch(); allPerms = genPerms(config.digits); p1Knowledge = [...allPerms]; p2Knowledge = [...allPerms];
             document.getElementById('playerStatBox').style.display = 'block'; document.getElementById('cpuStatBox').style.display = config.mode === '1p' ? 'block' : 'none';
-            const secretDisplay = document.getElementById('secret-code-display');
-            if (config.mode === '1p') { secretDisplay.classList.remove('hidden'); document.getElementById('displayMySecretBig').innerText = p1Secret.join(''); } else { secretDisplay.classList.add('hidden'); }
-            document.getElementById('setup-screen').classList.add('hidden-state'); document.getElementById('game-screen').classList.remove('hidden-state');
-            document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
+            if (config.mode === '1p') { document.getElementById('secret-code-display').classList.remove('hidden'); document.getElementById('displayMySecretBig').innerText = p1Secret.join(''); } else { document.getElementById('secret-code-display').classList.add('hidden'); }
+            document.querySelectorAll('#main-menu, #online-lobby, #setup-screen').forEach(el => el && el.classList.add('hidden-state'));
+            document.getElementById('game-screen').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
             p1WonThisTurn = false; isProcessing = false; initTurn();
         }
 
@@ -836,8 +786,11 @@
             const targetS = (config.mode === 'online' && myPlayerNum === 1) ? p2Secret : (myPlayerNum === 2 ? p1Secret : p2Secret);
             const res = checkResult(currentGuess, targetS);
             if(config.mode === 'online') {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                await updateDoc(roomRef, { lastAction: { playerNum: myPlayerNum, guess: currentGuess, res: res, turn: turn }, currentPlayer: myPlayerNum === 1 ? 2 : 1 });
+                await db.doc(`artifacts/${appId}/public/data/rooms/${currentRoomId}`).update({ 
+                    lastAction: { playerNum: myPlayerNum, guess: currentGuess, res: res, turn: turn }, 
+                    currentPlayer: myPlayerNum === 1 ? 2 : 1,
+                    updatedAt: Date.now()
+                });
             }
             p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(currentGuess, p); return r.hits === res.hits && r.blows === res.blows; });
             await showAnnounce(currentGuess.join(''), res, 1); addLog('player', [...currentGuess], res);
@@ -848,35 +801,35 @@
         async function handleRemoteAction(actionData) {
             isProcessing = true; clearInterval(gameTimerInterval);
             const res = actionData.res; p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-            await showAnnounce(actionData.guess.join(''), res, 2); addLog('cpu', actionData.guess, res);
-            checkGameOver(res.hits === config.digits);
+            await showAnnounce(actionData.guess.join(''), res, 2); addLog('cpu', actionData.guess, res); checkGameOver(res.hits === config.digits);
         }
 
         async function cpuTurn() {
             await new Promise(r => setTimeout(r, 1000));
-            let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : allPerms[Math.floor(Math.random() * allPerms.length)];
+            // CPU Hardware logical deduction
+            let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : genRandArr(config.digits);
             const res = checkResult(guess, p1Secret); p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
             await showAnnounce(guess.join(''), res, 2); addLog('cpu', guess, res); return res.hits === config.digits;
         }
 
         function checkGameOver(p2Won = false) {
             if (p1WonThisTurn && p2Won) endGame("DRAW", "Both solved!"); else if (p1WonThisTurn) endGame("YOU WIN", "Solved first!");
-            else if (p2Won) endGame("ENEMY WIN", "Enemy solved!"); else { if (currentPlayer === 1) turn++; isProcessing = false; initTurn(); }
+            else if (p2Won) endGame("ENEMY WIN", "Partner solved!"); else { if (currentPlayer === 1) turn++; isProcessing = false; initTurn(); }
         }
 
         async function showAnnounce(num, res, player) {
             return new Promise(resolve => {
                 const announce = document.getElementById('big-announce'); const bigNum = document.getElementById('big-number'), bigRes = document.getElementById('big-result'), bigP = document.getElementById('big-player');
                 bigNum.innerText = num; bigRes.innerHTML = `<span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span>`;
-                bigP.innerText = player === 1 ? "YOU" : "PARTNER"; announce.classList.add('show'); sfx.scan();
+                bigP.innerText = player === 1 ? (config.mode==='online'?"YOU":"P1") : (config.mode==='online'?"PARTNER":"P2"); announce.classList.add('show'); sfx.scan();
                 setTimeout(() => { announce.classList.remove('show'); setTimeout(resolve, 300); }, 1000);
             });
         }
 
         function addLog(who, guess, res) {
             const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory'); const item = document.createElement('div');
-            item.className = "flex justify-between items-center p-1.5 bg-white/5 border border-white/5 rounded-lg mb-1";
-            item.innerHTML = `<span class="font-mono text-xs tracking-widest ${who==='player'?'text-cyan-400':'text-pink-500'}">${guess.join('')}</span><span class="text-[9px]"><span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span></span>`;
+            item.className = "flex justify-between items-center p-1 bg-white/5 border border-white/5 rounded mb-1";
+            item.innerHTML = `<span class="font-mono text-[10px] tracking-widest ${who==='player'?'text-cyan-400':'text-pink-500'}">${guess.join('')}</span><span class="text-[9px]"><span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span></span>`;
             list.appendChild(item); list.scrollTop = list.scrollHeight;
         }
 
@@ -887,12 +840,10 @@
         }
 
         function startTimer() {
-            clearInterval(gameTimerInterval); if (config.timeLimit === 0) { document.getElementById('gameTimer').innerText = "♾️"; return; }
-            currentTime = config.timeLimit; updateTimerUI();
-            gameTimerInterval = setInterval(() => { currentTime--; updateTimerUI(); if (currentTime <= 0) { clearInterval(gameTimerInterval); endGame("TIME OVER", "Time Up!"); } }, 1000);
+            clearInterval(gameTimerInterval); if (config.timeLimit === 0) { return; }
+            currentTime = config.timeLimit; gameTimerInterval = setInterval(() => { currentTime--; if (currentTime <= 0) { clearInterval(gameTimerInterval); endGame("TIME OVER", "Time Up!"); } }, 1000);
         }
 
-        function updateTimerUI() { const el = document.getElementById('gameTimer'); el.innerText = currentTime + "s"; el.style.color = currentTime <= 5 ? "#ff0000" : "var(--neon-blue)"; }
         function checkResult(guess, secret) { let hits = 0, blows = 0; guess.forEach((g, i) => { if(g === secret[i]) hits++; else if(secret.includes(g)) blows++; }); return { hits, blows }; }
         function genRandArr(n) { const arr = []; while(arr.length < n) { let r = Math.floor(Math.random()*10); if(!arr.includes(r)) arr.push(r); } return arr; }
         function genPerms(n) { const res = []; function bt(cur) { if(cur.length === n) { res.push([...cur]); return; } for(let i=0; i<=9; i++) { if(!cur.includes(i)) { cur.push(i); bt(cur); cur.pop(); } } } bt([]); return res; }
@@ -901,15 +852,11 @@
         window.backspaceGuess = () => { for (let i = config.digits - 1; i >= 0; i--) { if (currentGuess[i] !== null) { currentGuess[i] = null; activeIdx = i; break; } } sfx.delete(); renderGameSlots(); renderGameKeypad(); };
         function endGame(title, body) { clearInterval(gameTimerInterval); document.getElementById('result-title').innerText = title; document.getElementById('result-body').innerText = body; document.getElementById('overlay').classList.remove('hidden-state'); if (title.includes("WIN") || title.includes("YOU")) sfx.win(); else sfx.loss(); }
 
-        function initStars() {
-            const canvas = document.getElementById('starCanvas'); const ctx = canvas.getContext('2d'); let stars = [];
-            const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; createStars(); };
-            const createStars = () => { stars = []; for (let i = 0; i < 200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, v: Math.random()*0.5 }); };
-            window.addEventListener('resize', resize); resize();
-            function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = "white"; stars.forEach(s => { s.y += s.v; if(s.y > canvas.height) s.y = 0; ctx.globalAlpha = 0.5; ctx.fillRect(s.x, s.y, s.s, s.s); }); requestAnimationFrame(anim); }
-            anim();
-        }
-        window.onload = () => { initStars(); };
+        const canvas = document.getElementById('starCanvas'); const ctx = canvas.getContext('2d'); let stars = [];
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; createStars(); };
+        const createStars = () => { stars = []; for (let i = 0; i < 200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, v: Math.random()*0.5 }); };
+        function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = "white"; stars.forEach(s => { s.y += s.v; if(s.y > canvas.height) s.y = 0; ctx.globalAlpha = 0.5; ctx.fillRect(s.x, s.y, s.s, s.s); }); requestAnimationFrame(anim); }
+        window.addEventListener('resize', resize); resize(); anim();
     </script>
 </body>
 </html>

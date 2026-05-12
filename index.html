@@ -134,6 +134,7 @@
 
     <canvas class="stars" id="starCanvas"></canvas>
 
+    <!-- LOADING -->
     <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
@@ -141,12 +142,14 @@
         </div>
     </div>
 
+    <!-- ANNOUNCE -->
     <div id="big-announce">
         <div id="big-number" class="text-5xl font-mono tracking-widest mb-1 text-white">----</div>
         <div id="big-result" class="text-2xl font-bold">0H 0B</div>
         <div id="big-player" class="text-[10px] tracking-widest opacity-80 mt-1 uppercase">PLAYER 1</div>
     </div>
 
+    <!-- HEADER -->
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
@@ -189,6 +192,7 @@
         </div>
     </header>
 
+    <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full text-center">Hit&Blow</h1>
@@ -215,6 +219,7 @@
         </div>
     </div>
 
+    <!-- ONLINE LOBBY -->
     <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-6 max-w-xl w-full space-y-5 mx-auto">
             <div class="flex justify-between items-center">
@@ -546,7 +551,10 @@
                 showError('create', err.type === 'unavailable-id' ? 'Already Used' : 'Connection Error');
                 btn.innerText = "Create Room"; btn.disabled = false;
             });
-            peer.on('connection', (connection) => { conn = connection; setupConnection(); });
+            peer.on('connection', (connection) => { 
+                conn = connection; 
+                setupConnection(); 
+            });
         };
 
         window.searchRoom = () => {
@@ -558,7 +566,9 @@
             peer = new Peer();
             peer.on('open', () => {
                 const tempConn = peer.connect('HB-ROOM-' + rawId);
-                tempConn.on('open', () => tempConn.send({ type: 'request-info' }));
+                tempConn.on('open', () => {
+                    tempConn.send({ type: 'request-info' });
+                });
                 tempConn.on('data', data => {
                     if(data.type === 'room-info') {
                         config.digits = data.config.digits; 
@@ -567,7 +577,9 @@
                         document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
                         document.getElementById('join-preview').classList.remove('hidden');
-                        btn.classList.add('hidden'); conn = tempConn;
+                        btn.classList.add('hidden'); 
+                        conn = tempConn;
+                        setupConnection(); // ここで本接続のリスナーを張る
                     }
                 });
                 setTimeout(() => { if(!conn || !conn.open) { showError('join', 'Not Found'); btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden'); } }, 3000);
@@ -577,36 +589,60 @@
         window.confirmJoin = () => {
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
             myPlayerNum = 2; config.mode = 'online';
-            conn.send({ type: 'guest-join', guestName: myUserName });
-            setupConnection(); enterOnlineSetup();
+            if (conn && conn.open) {
+                conn.send({ type: 'guest-join', guestName: myUserName });
+                enterOnlineSetup();
+            }
         };
 
         function setupConnection() {
             conn.on('data', data => {
-                if(data.type === 'request-info') conn.send({ type: 'room-info', config: config, hostName: myUserName });
-                else if(data.type === 'guest-join') { partnerName = data.guestName || "Guest"; document.getElementById('p2-name-label').innerText = partnerName; }
-                else if(data.type === 'start') { 
-                    config = data.config; config.mode = 'online'; 
-                    currentPlayer = data.startPlayer; partnerName = data.hostName; 
-                    p1Secret = data.p1Secret; 
-                    startGameOnline(); 
+                if(data.type === 'request-info') {
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
-                else if(data.type === 'ready') { 
-                    if(myPlayerNum === 1) { guestReady = true; p2Secret = data.secret; checkOnlineStart(); } 
-                    else { hostReady = true; p1Secret = data.secret; } 
+                else if(data.type === 'guest-join') {
+                    partnerName = data.guestName || "Guest";
+                    document.getElementById('p2-name-label').innerText = partnerName;
+                    // ホスト側も設定を送り直す
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
-                else if(data.type === 'cancel-ready') { if(myPlayerNum === 1) guestReady = false; else hostReady = false; }
-                else if(data.type === 'action') { window.handleRemoteAction(data); }
+                else if(data.type === 'ready') {
+                    if (myPlayerNum === 1) { // Host
+                        guestReady = true;
+                        p2Secret = data.secret;
+                        checkOnlineStart();
+                    } else { // Guest
+                        hostReady = true;
+                        p1Secret = data.secret;
+                    }
+                }
+                else if(data.type === 'start') {
+                    config = data.config;
+                    currentPlayer = data.startPlayer;
+                    p1Secret = data.p1Secret; // ホストのコードを受け取る
+                    startGameOnline();
+                }
+                else if(data.type === 'action') {
+                    window.handleRemoteAction(data);
+                }
+                else if(data.type === 'cancel-ready') {
+                    if(myPlayerNum === 1) guestReady = false;
+                    else hostReady = false;
+                }
             });
             conn.on('close', () => { if(!document.getElementById('game-screen').classList.contains('hidden-state')) { alert("Disconnected."); window.showOnlineLobby(); } });
         }
 
         function checkOnlineStart() {
+            // ホストのみが開始を制御
             if (myPlayerNum === 1 && hostReady && guestReady) {
-                currentPlayer = 1; 
+                currentPlayer = 1; // ホスト先攻固定、またはランダム
                 conn.send({ 
-                    type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer,
-                    p1Secret: p1Secret 
+                    type: 'start', 
+                    config: config, 
+                    hostName: myUserName, 
+                    startPlayer: currentPlayer,
+                    p1Secret: p1Secret // ホストのコードをゲストに渡す
                 });
                 startGameOnline();
             }
@@ -628,8 +664,7 @@
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
         window.showOnlineLobby = () => { 
             hideAll(); 
-            const lobby = document.getElementById('online-lobby');
-            lobby.classList.remove('hidden-state');
+            document.getElementById('online-lobby').classList.remove('hidden-state');
             document.getElementById('join-preview').classList.add('hidden'); 
             const sBtn = document.getElementById('search-btn');
             if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
@@ -727,10 +762,19 @@
         
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
-                sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
-                if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
-                else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
-                if(conn && conn.open) conn.send({ type: 'ready', secret: setupState.p1Secret });
+                sfx.launch(); 
+                document.getElementById('start-btn').classList.add('hidden'); 
+                document.getElementById('online-waiting-info').classList.remove('hidden');
+                if(myPlayerNum === 1) {
+                    hostReady = true;
+                    p1Secret = [...setupState.p1Secret];
+                } else {
+                    guestReady = true;
+                    p2Secret = [...setupState.p1Secret];
+                }
+                if(conn && conn.open) {
+                    conn.send({ type: 'ready', secret: setupState.p1Secret });
+                }
                 checkOnlineStart();
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
@@ -764,6 +808,7 @@
             const mySecretArea = document.getElementById('displayMySecretBig');
             if (config.mode === '2p') mySecretArea.innerText = "?".repeat(config.digits);
             else mySecretArea.innerText = (config.mode === 'online' ? (myPlayerNum === 1 ? p1Secret : p2Secret) : p1Secret).join('');
+            
             currentGuess = Array(config.digits).fill(null); activeIdx = 0; 
             hideAll(); document.getElementById('game-screen').classList.remove('hidden-state'); 
             document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
@@ -799,7 +844,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
+                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));

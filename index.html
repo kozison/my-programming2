@@ -134,7 +134,6 @@
 
     <canvas class="stars" id="starCanvas"></canvas>
 
-    <!-- LOADING -->
     <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
@@ -142,14 +141,12 @@
         </div>
     </div>
 
-    <!-- ANNOUNCE -->
     <div id="big-announce">
         <div id="big-number" class="text-5xl font-mono tracking-widest mb-1 text-white">----</div>
         <div id="big-result" class="text-2xl font-bold">0H 0B</div>
         <div id="big-player" class="text-[10px] tracking-widest opacity-80 mt-1 uppercase">PLAYER 1</div>
     </div>
 
-    <!-- HEADER -->
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
@@ -192,7 +189,6 @@
         </div>
     </header>
 
-    <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full text-center">Hit&Blow</h1>
@@ -219,7 +215,6 @@
         </div>
     </div>
 
-    <!-- ONLINE LOBBY -->
     <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-6 max-w-xl w-full space-y-5 mx-auto">
             <div class="flex justify-between items-center">
@@ -258,6 +253,7 @@
                     <button onclick="if(window.createRoom) window.createRoom()" id="create-btn" class="w-full py-2 bg-cyan-500 text-black font-bold rounded uppercase text-[11px]">Create Room</button>
                 </div>
 
+                <!-- Join Room -->
                 <div class="space-y-3">
                     <h2 class="text-sm font-bold text-pink-500 uppercase italic">Join Room</h2>
                     <div>
@@ -592,7 +588,7 @@
                 else if(data.type === 'start') { 
                     config = data.config; config.mode = 'online'; 
                     currentPlayer = data.startPlayer; partnerName = data.hostName; 
-                    p1Secret = data.p1Secret; // ゲストもホストのシークレットを受け取る
+                    p1Secret = data.p1Secret; 
                     startGameOnline(); 
                 }
                 else if(data.type === 'ready') { 
@@ -610,7 +606,7 @@
                 currentPlayer = 1; 
                 conn.send({ 
                     type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer,
-                    p1Secret: p1Secret // ホストが開始時に自分のコードも共有する
+                    p1Secret: p1Secret 
                 });
                 startGameOnline();
             }
@@ -630,7 +626,15 @@
 
         window.showMainMenu = () => { disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
+        window.showOnlineLobby = () => { 
+            hideAll(); 
+            const lobby = document.getElementById('online-lobby');
+            lobby.classList.remove('hidden-state');
+            document.getElementById('join-preview').classList.add('hidden'); 
+            const sBtn = document.getElementById('search-btn');
+            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
+            disbandRoom(); 
+        };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -674,7 +678,8 @@
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden');
+            activeIdx = 0; 
+            document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
@@ -723,7 +728,8 @@
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
                 sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
-                if(myPlayerNum === 1) p1Secret = [...setupState.p1Secret]; else p2Secret = [...setupState.p1Secret];
+                if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
+                else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
                 if(conn && conn.open) conn.send({ type: 'ready', secret: setupState.p1Secret });
                 checkOnlineStart();
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
@@ -781,7 +787,6 @@
             indicator.innerText = statusText; indicator.className = `text-2xl font-mono font-black tracking-widest mb-4 transition-colors ${colorClass}`;
             document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisRound);
             
-            // 2Pオフライン用リセット
             if (config.mode === '2p') {
                 currentGuess = Array(config.digits).fill(null);
             }
@@ -794,7 +799,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
+                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -828,7 +833,6 @@
             
             await showAnnounce(guessCopy.join(''), res, actingPlayerNum); 
             
-            // 演出後にゲームが有効か再チェック（バグ対策）
             if (!isGameActive) return;
 
             if (actingPlayerNum === 1) {
@@ -920,7 +924,7 @@
         }
 
         function addLog(who, guess, res) {
-            if (!isGameActive && !document.getElementById('overlay').classList.contains('hidden-state')) return;
+            if (!isGameActive && document.getElementById('overlay').classList.contains('hidden-state')) return;
             const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory');
             const item = document.createElement('div');
             item.className = "flex justify-between items-center p-1.5 bg-white/5 border border-white/5 rounded mb-1";

@@ -519,11 +519,13 @@
         // ==========================================
         let peer = null, conn = null, myUserName = "Guest", partnerName = "Partner", myPlayerNum = null;
         let hostReady = false, guestReady = false, isGameActive = false, startingPlayer = 1;
+        let connectionSetupDone = false; // 重複リスナー防止フラグ
 
         function disbandRoom() {
             if (conn && conn.open) { conn.send({ type: 'disband' }); conn.close(); }
             if (peer) { peer.destroy(); peer = null; }
             conn = null; hostReady = false; guestReady = false; isGameActive = false;
+            connectionSetupDone = false;
             p1Secret = []; p2Secret = [];
             setupState.phase = 'p1';
             setupState.p1Secret = Array(config.digits).fill(null);
@@ -554,6 +556,7 @@
                 btn.innerText = "Create Room"; btn.disabled = false;
             });
             peer.on('connection', (connection) => { 
+                if (conn) return; // 重複接続防止
                 conn = connection; setupConnection(); 
             });
         };
@@ -568,10 +571,12 @@
             peer.on('open', () => {
                 const tempConn = peer.connect('HB-ROOM-' + rawId);
                 tempConn.on('open', () => { tempConn.send({ type: 'request-info' }); });
+                let infoReceived = false;
                 tempConn.on('data', data => {
-                    if(data.type === 'room-info') {
+                    if(data.type === 'room-info' && !infoReceived) {
+                        infoReceived = true; // 1度だけ処理する
                         config.digits = data.config.digits; 
-                        partnerName = data.hostName || "Host"; // Previewで名前確保
+                        partnerName = data.hostName || "Host"; 
                         document.getElementById('preview-host-name').innerText = partnerName;
                         document.getElementById('preview-digits').innerText = data.config.digits;
                         document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
@@ -595,6 +600,9 @@
         };
 
         function setupConnection() {
+            if (connectionSetupDone) return; // リスナーの重複登録を防止
+            connectionSetupDone = true;
+
             conn.on('data', data => {
                 if(data.type === 'request-info') {
                     conn.send({ type: 'room-info', config: config, hostName: myUserName });
@@ -602,13 +610,13 @@
                 else if(data.type === 'guest-join') {
                     partnerName = data.guestName || "Guest";
                     document.getElementById('p2-name-label').innerText = partnerName;
-                    conn.send({ type: 'room-info', config: config, hostName: myUserName }); // Host sends back name
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
                 else if(data.type === 'ready') {
-                    if (myPlayerNum === 1) { // Host receives guest ready
-                        guestReady = true; p2Secret = data.secret; checkOnlineStart();
-                    } else { // Guest receives host ready
-                        hostReady = true; p1Secret = data.secret;
+                    if (myPlayerNum === 1) { 
+                        guestReady = true; p2Secret = data.secret; partnerName = data.userName; checkOnlineStart();
+                    } else { 
+                        hostReady = true; p1Secret = data.secret; partnerName = data.userName;
                     }
                 }
                 else if(data.type === 'start') {
@@ -742,7 +750,7 @@
                 sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
                 if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
                 else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
-                if(conn && conn.open) { conn.send({ type: 'ready', secret: setupState.p1Secret }); }
+                if(conn && conn.open) { conn.send({ type: 'ready', secret: setupState.p1Secret, userName: myUserName }); }
                 checkOnlineStart();
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
@@ -838,10 +846,9 @@
             await showAnnounce(guessCopy.join(''), res, myPlayerNum || currentPlayer); if (!isGameActive) return;
 
             // 自分の履歴は常に左側
-            if (config.mode === 'online') addLog('player', guessCopy, res);
-            else addLog(currentPlayer === 1 ? 'player' : 'cpu', guessCopy, res);
+            addLog('player', guessCopy, res);
 
-            // 自分の推論を更新
+            // 推論更新
             if (config.mode === 'online') {
                 if(myPlayerNum === 1) p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
                 else p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
@@ -859,7 +866,7 @@
                 }
             } else {
                 if (!isFirstPlayerTurn && firstPlayerWon) {
-                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU LOSE");
+                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU LOSE"); // 後行が外して先行の勝利確定
                 }
             }
 
@@ -883,7 +890,9 @@
             const res = data.res; const remotePNum = (myPlayerNum === 1 ? 2 : 1);
             await showAnnounce(data.guess.join(''), res, remotePNum); if (!isGameActive) return;
 
+            // 相手の履歴は常に右側
             addLog('cpu', data.guess, res);
+
             if (remotePNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
             } else { 
@@ -892,16 +901,17 @@
 
             const isFirstPlayerTurn = (currentPlayer === startingPlayer);
 
+            // ターン終了（相手の番が終わった時）の勝敗チェック
             if (res.hits === config.digits) {
                 if (isFirstPlayerTurn) {
                     firstPlayerWon = true; // 先行（相手）が正解。
                 } else {
-                    if (firstPlayerWon) return endGame("DRAW");
+                    if (firstPlayerWon) return endGame("DRAW"); // 両方正解
                     return endGame("YOU LOSE"); // 相手（後行）のみ正解したので自分の負け
                 }
             } else {
                 if (!isFirstPlayerTurn && firstPlayerWon) {
-                    return endGame("YOU WIN");
+                    return endGame("YOU WIN"); // 後行（相手）が外して、先行（自分）が正解済み
                 }
             }
             

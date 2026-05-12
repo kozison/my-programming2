@@ -37,12 +37,13 @@
         }
 
         .slot {
-            width: 30px; height: 40px;
+            width: 36px; height: 48px;
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 6px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+            font-size: 1.2rem; cursor: pointer; transition: all 0.2s;
             background: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
         }
 
         .slot.active {
@@ -54,7 +55,8 @@
 
         .history-list {
             flex-grow: 1; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 2px;
+            display: flex; flex-direction: column; gap: 3px;
+            padding-right: 4px;
         }
 
         #big-announce {
@@ -94,17 +96,17 @@
         .menu-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1rem; border-radius: 10px;
+            padding: 1.2rem; border-radius: 10px;
             transition: all 0.3s; text-align: left; width: 100%;
         }
-        .menu-btn:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); transform: translateY(-1px); }
+        .menu-btn:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); transform: translateY(-2px); }
 
         .input-dark {
             background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
-            padding: 6px; border-radius: 6px; color: white; outline: none; font-size: 0.85rem;
+            padding: 8px; border-radius: 6px; color: white; outline: none; font-size: 0.95rem;
         }
 
-        .error-msg { color: #ff5252; font-size: 9px; margin-top: 1px; height: 12px; font-weight: bold; overflow: hidden; }
+        .error-msg { color: #ff5252; font-size: 10px; margin-top: 2px; height: 14px; font-weight: bold; overflow: hidden; }
 
         .compact-view {
             max-height: 95vh;
@@ -117,6 +119,9 @@
             cursor: pointer;
             opacity: 0.6;
             transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .mute-btn:hover { opacity: 1; }
     </style>
@@ -135,181 +140,200 @@
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
-            <!-- Functional but hidden timer -->
+            <!-- 機能はしているが、表示は消す -->
             <div id="timer-box" class="hidden"><span id="gameTimer">♾️</span></div>
         </div>
         
-        <div class="flex items-center gap-2">
-            <div class="flex items-center gap-2 bg-white/5 px-2 py-1 rounded-full border border-white/10">
-                <button onclick="resetAudio()" class="text-[7px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-1 uppercase">Reset</button>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <button onclick="resetAudio()" class="text-[8px] bg-white/10 px-2 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-2 uppercase">Reset</button>
                 
-                <div class="flex items-center gap-1">
-                    <span class="text-[8px] opacity-50 uppercase font-bold">BGM</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[9px] opacity-50 uppercase font-bold">BGM</span>
+                    <!-- スピーカーアイコン -->
                     <div id="bgmMuteIcon" class="mute-btn" onclick="toggleMute('bgm')">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        </svg>
                     </div>
                 </div>
-                <input type="range" id="bgmVolume" min="0" max="1" step="0.01" value="0.5" class="w-10" oninput="updateVolume('bgm', this.value)">
-                <span id="bgmLabel" class="text-[9px] w-4 text-right inline-block text-cyan-400 font-mono font-bold">50</span>
+                <input type="range" id="bgmVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="updateVolume('bgm', this.value)">
                 
-                <div class="w-[1px] h-3 bg-white/10 mx-1"></div>
+                <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
                 
-                <div class="flex items-center gap-1">
-                    <span class="text-[8px] opacity-50 uppercase font-bold">SE</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[9px] opacity-50 uppercase font-bold">SE</span>
+                    <!-- スピーカーアイコン -->
                     <div id="seMuteIcon" class="mute-btn" onclick="toggleMute('se')">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        </svg>
                     </div>
                 </div>
-                <input type="range" id="seVolume" min="0" max="1" step="0.01" value="0.5" class="w-10" oninput="updateVolume('se', this.value)">
-                <span id="seLabel" class="text-[9px] w-4 text-right inline-block text-cyan-400 font-mono font-bold">50</span>
+                <input type="range" id="seVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="updateVolume('se', this.value)">
             </div>
-            <button id="exitBtn" onclick="handleSmartExit()" class="hidden text-[8px] border border-white/10 px-2 py-1 rounded-full hover:bg-red-900/20 font-bold uppercase">Exit</button>
+            <button id="exitBtn" onclick="handleSmartExit()" class="hidden text-[9px] border border-white/10 px-3 py-1.5 rounded-full hover:bg-red-900/20 font-bold uppercase">Exit</button>
         </div>
     </header>
 
     <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
-        <div class="max-w-[280px] w-full space-y-4">
-            <h1 class="text-5xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic">Hit&Blow</h1>
+        <div class="max-w-[300px] w-full space-y-6">
+            <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic">Hit&Blow</h1>
             
             <button onclick="showOfflineSetup()" class="menu-btn group">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-lg font-bold text-white group-hover:text-cyan-400 uppercase">Offline 👤🤖</h2>
-                        <p class="text-[9px] opacity-50 uppercase tracking-widest mt-1">1P VS CPU / 1P VS 2P</p>
+                        <h2 class="text-xl font-bold text-white group-hover:text-cyan-400 uppercase">Offline 👤🤖</h2>
+                        <p class="text-[10px] opacity-50 uppercase tracking-widest mt-1">1P VS CPU / 1P VS 2P</p>
                     </div>
-                    <span class="text-2xl">👤🤖</span>
+                    <span class="text-3xl">👤🤖</span>
                 </div>
             </button>
 
             <button onclick="showOnlineLobby()" class="menu-btn group">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-lg font-bold text-white group-hover:text-cyan-400 uppercase">Online 👥</h2>
-                        <p class="text-[9px] opacity-50 uppercase tracking-widest mt-1">Play with Friend</p>
+                        <h2 class="text-xl font-bold text-white group-hover:text-cyan-400 uppercase">Online 👥</h2>
+                        <p class="text-[10px] opacity-50 uppercase tracking-widest mt-1">Play with Friend</p>
                     </div>
-                    <span class="text-2xl">👥</span>
+                    <span class="text-3xl">👥</span>
                 </div>
             </button>
         </div>
     </div>
 
     <!-- ONLINE LOBBY -->
-    <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-2 compact-view">
-        <div class="glass-panel p-4 max-w-xl w-full space-y-4">
+    <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
+        <div class="glass-panel p-6 max-w-xl w-full space-y-5">
             <div class="flex justify-between items-center">
-                <h1 class="text-sm font-bold tracking-widest uppercase">Online Lobby</h1>
-                <button onclick="showMainMenu()" class="text-[9px] opacity-50 hover:opacity-100 uppercase underline">Back</button>
+                <h1 class="text-base font-bold tracking-widest uppercase">Online Lobby</h1>
+                <button onclick="showMainMenu()" class="text-[10px] opacity-50 hover:opacity-100 uppercase underline font-bold">Back</button>
             </div>
 
             <div class="bg-white/5 p-3 rounded-lg border border-white/10">
-                <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest">User Name</label>
-                <input type="text" id="user-name-input" maxlength="12" placeholder="My Name" class="w-full input-dark">
+                <label class="block text-[9px] opacity-50 mb-1.5 uppercase tracking-widest font-bold">User Name</label>
+                <input type="text" id="user-name-input" maxlength="12" placeholder="My Name" class="w-full input-dark font-bold">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Create -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Create Room -->
                 <div class="space-y-3 border-r border-white/10 pr-0 md:pr-4">
-                    <h2 class="text-xs font-bold text-cyan-400 uppercase italic">Create Room</h2>
+                    <h2 class="text-sm font-bold text-cyan-400 uppercase italic">Create Room</h2>
                     <div>
                         <input type="text" id="create-room-id" placeholder="Password" class="w-full input-dark uppercase font-bold">
                         <p id="create-error" class="error-msg hidden"></p>
                     </div>
-                    <div class="space-y-2">
+                    <div class="space-y-3">
                         <div class="grid grid-cols-3 gap-1">
-                            <button onclick="setOnlineDigits(3)" id="obtn-d3" class="py-1 rounded bg-white/5 border border-white/10 text-xs font-bold">3</button>
-                            <button onclick="setOnlineDigits(4)" id="obtn-d4" class="py-1 rounded bg-cyan-600 border border-white/10 text-xs font-bold">4</button>
-                            <button onclick="setOnlineDigits(5)" id="obtn-d5" class="py-1 rounded bg-white/5 border border-white/10 text-xs font-bold">5</button>
+                            <button onclick="setOnlineDigits(3)" id="obtn-d3" class="py-1.5 rounded bg-white/5 border border-white/10 text-xs font-bold">3</button>
+                            <button onclick="setOnlineDigits(4)" id="obtn-d4" class="py-1.5 rounded bg-cyan-600 border border-white/10 text-xs font-bold">4</button>
+                            <button onclick="setOnlineDigits(5)" id="obtn-d5" class="py-1.5 rounded bg-white/5 border border-white/10 text-xs font-bold">5</button>
                         </div>
                         <div>
-                            <div class="flex justify-between font-bold"><label class="text-[8px] opacity-50 uppercase">Time</label><span id="onlineTimeDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
+                            <div class="flex justify-between font-bold"><label class="text-[9px] opacity-50 uppercase">Time Limit</label><span id="onlineTimeDisplay" class="text-[10px] font-mono text-cyan-400">♾️</span></div>
                             <input type="range" id="onlineTimeSlider" min="0" max="300" step="10" value="0" class="w-full" oninput="updateOnlineTimeDisplay(this.value)">
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="onlineStatsToggle" checked class="w-3 h-3 accent-cyan-400">
-                            <label for="onlineStatsToggle" class="text-[8px] opacity-60 uppercase font-bold cursor-pointer">Percentage Scan</label>
+                            <input type="checkbox" id="onlineStatsToggle" checked class="w-4 h-4 accent-cyan-400">
+                            <label for="onlineStatsToggle" class="text-[9px] opacity-60 uppercase font-bold cursor-pointer">Percentage Scan</label>
                         </div>
                     </div>
-                    <button onclick="createRoom()" class="w-full py-1.5 bg-cyan-500 text-black font-bold rounded uppercase text-[10px]">Create Room</button>
+                    <button onclick="createRoom()" class="w-full py-2 bg-cyan-500 text-black font-bold rounded uppercase text-[11px]">Create Room</button>
                 </div>
 
-                <!-- Join -->
+                <!-- Join Room -->
                 <div class="space-y-3">
-                    <h2 class="text-xs font-bold text-pink-500 uppercase italic">Join Room</h2>
+                    <h2 class="text-sm font-bold text-pink-500 uppercase italic">Join Room</h2>
                     <div>
                         <input type="text" id="join-room-id" placeholder="ID" class="w-full input-dark uppercase font-bold">
                         <p id="join-error" class="error-msg hidden"></p>
                     </div>
-                    <div id="join-preview" class="hidden p-2 bg-white/5 border border-cyan-500/30 rounded-lg space-y-1 text-[9px] font-bold">
-                        <div class="text-cyan-400">Room Found!</div>
+                    <div id="join-preview" class="hidden p-3 bg-white/5 border border-cyan-500/30 rounded-lg space-y-1.5 text-[10px] font-bold">
+                        <div class="text-cyan-400 text-[11px]">Room Found!</div>
                         <div><span class="opacity-50">Host:</span> <span id="preview-host-name"></span></div>
-                        <div class="flex gap-2">
-                            <div><span class="opacity-50">D:</span> <span id="preview-digits"></span></div>
-                            <div><span class="opacity-50">T:</span> <span id="preview-time"></span></div>
-                            <div><span class="opacity-50">S:</span> <span id="preview-stats"></span></div>
+                        <div class="flex gap-3">
+                            <div><span class="opacity-50">Digits:</span> <span id="preview-digits"></span></div>
+                            <div><span class="opacity-50">Time:</span> <span id="preview-time"></span></div>
+                            <div><span class="opacity-50">Stats:</span> <span id="preview-stats"></span></div>
                         </div>
-                        <button onclick="confirmJoin()" class="w-full py-1.5 bg-pink-500 text-white font-bold rounded mt-1">JOIN NOW</button>
+                        <button onclick="confirmJoin()" class="w-full py-2 bg-pink-500 text-white font-bold rounded mt-2 uppercase">JOIN NOW</button>
                     </div>
-                    <button id="search-btn" onclick="searchRoom()" class="w-full py-2 border border-white/20 rounded uppercase text-[10px] font-bold">Search</button>
+                    <button id="search-btn" onclick="searchRoom()" class="w-full py-2 border border-white/20 rounded uppercase text-[11px] font-bold">Search</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- SETUP SCREEN -->
-    <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-2 compact-view">
-        <div class="glass-panel p-4 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-3 border-b border-white/10 pb-1">
-                <h1 class="text-lg font-bold tracking-widest uppercase">Setup</h1>
+    <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
+        <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                <h1 class="text-xl font-bold tracking-widest uppercase">Setup</h1>
                 <button onclick="handleSmartBackFromSetup()" class="text-[10px] opacity-50 hover:opacity-100 uppercase underline font-bold">Back</button>
             </div>
             
-            <div id="setup-waiting-msg" class="hidden text-center mb-3 p-1.5 bg-cyan-900/30 rounded border border-cyan-500/20">
-                <p class="text-[9px] tracking-widest animate-pulse font-bold uppercase">Wait for partner...</p>
+            <div id="setup-waiting-msg" class="hidden text-center mb-4 p-2 bg-cyan-900/30 rounded border border-cyan-500/20">
+                <p class="text-[10px] tracking-widest animate-pulse font-bold uppercase">Wait for partner...</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-3" id="setup-options">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-4" id="setup-options">
                     <div>
-                        <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest font-bold">Mode</label>
-                        <div class="flex gap-1">
-                            <button onclick="setMode('1p')" id="btn-m1p" class="flex-1 py-1 rounded bg-cyan-600 border border-white/10 text-[9px] font-bold">1P VS CPU</button>
-                            <button onclick="setMode('2p')" id="btn-m2p" class="flex-1 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-bold">1P VS 2P</button>
+                        <label class="block text-[9px] opacity-50 mb-1.5 uppercase tracking-widest font-bold">Mode</label>
+                        <div class="flex gap-1.5">
+                            <button onclick="setMode('1p')" id="btn-m1p" class="flex-1 py-1.5 rounded bg-cyan-600 border border-white/10 text-[10px] font-bold">1P VS CPU</button>
+                            <button onclick="setMode('2p')" id="btn-m2p" class="flex-1 py-1.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold">1P VS 2P</button>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest font-bold">Digits</label>
-                        <div class="flex gap-1">
-                            <button onclick="setDigits(3)" id="btn-d3" class="flex-1 py-1 rounded bg-white/5 border border-white/10 text-xs font-bold">3</button>
-                            <button onclick="setDigits(4)" id="btn-d4" class="flex-1 py-1 rounded bg-cyan-600 border border-white/10 text-xs font-bold">4</button>
-                            <button onclick="setDigits(5)" id="btn-d5" class="flex-1 py-1 rounded bg-white/5 border border-white/10 text-xs font-bold">5</button>
+                        <label class="block text-[9px] opacity-50 mb-1.5 uppercase tracking-widest font-bold">Digits</label>
+                        <div class="flex gap-1.5">
+                            <button onclick="setDigits(3)" id="btn-d3" class="flex-1 py-1.5 rounded bg-white/5 border border-white/10 text-sm font-bold">3</button>
+                            <button onclick="setDigits(4)" id="btn-d4" class="flex-1 py-1.5 rounded bg-cyan-600 border border-white/10 text-sm font-bold">4</button>
+                            <button onclick="setDigits(5)" id="btn-d5" class="flex-1 py-1.5 rounded bg-white/5 border border-white/10 text-sm font-bold">5</button>
                         </div>
                     </div>
                     <div id="level-setting">
-                        <label class="block text-[8px] opacity-50 mb-1 uppercase tracking-widest font-bold">CPU Level</label>
-                        <div class="flex gap-1">
-                            <button onclick="setLevel(1)" id="btn-l1" class="flex-1 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-bold">EASY</button>
-                            <button onclick="setLevel(2)" id="btn-l2" class="flex-1 py-1 rounded bg-cyan-600 border border-white/10 text-[9px] font-bold">NORMAL</button>
-                            <button onclick="setLevel(3)" id="btn-l3" class="flex-1 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-bold">HARD</button>
+                        <label class="block text-[9px] opacity-50 mb-1.5 uppercase tracking-widest font-bold">CPU Level</label>
+                        <div class="flex gap-1.5">
+                            <button onclick="setLevel(1)" id="btn-l1" class="flex-1 py-1.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold">EASY</button>
+                            <button onclick="setLevel(2)" id="btn-l2" class="flex-1 py-1.5 rounded bg-cyan-600 border border-white/10 text-[10px] font-bold">NORMAL</button>
+                            <button onclick="setLevel(3)" id="btn-l3" class="flex-1 py-1.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold">HARD</button>
                         </div>
                     </div>
                     <div>
-                        <div class="flex justify-between font-bold"><label class="text-[8px] opacity-50 uppercase">Time Limit</label><span id="timeLimitDisplay" class="text-[9px] font-mono text-cyan-400">♾️</span></div>
+                        <div class="flex justify-between font-bold"><label class="text-[9px] opacity-50 uppercase">Time Limit</label><span id="timeLimitDisplay" class="text-[10px] font-mono text-cyan-400">♾️</span></div>
                         <input type="range" id="timeLimitSlider" min="0" max="300" step="10" value="0" class="w-full" oninput="updateTimeSetting(this.value)">
+                    </div>
+                    <!-- オフライン用のパーセント表示切り替え -->
+                    <div id="offline-stats-toggles" class="flex gap-4">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="p1StatsToggle" checked class="w-4 h-4 accent-cyan-400">
+                            <label for="p1StatsToggle" class="text-[8px] opacity-60 uppercase font-bold cursor-pointer">1P PERCENT</label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="p2StatsToggle" checked class="w-4 h-4 accent-cyan-400">
+                            <label for="p2StatsToggle" id="lbl-p2-stat" class="text-[8px] opacity-60 uppercase font-bold cursor-pointer">CPU PERCENT</label>
+                        </div>
                     </div>
                 </div>
 
                 <div class="flex flex-col justify-center">
-                    <label id="setup-label" class="text-[8px] opacity-50 uppercase font-bold mb-1">Secret Code</label>
-                    <div id="setup-slots" class="flex justify-center gap-1 mb-2"></div>
-                    <div id="setup-keypad" class="grid grid-cols-5 gap-1 mb-2"></div>
-                    <div class="grid grid-cols-3 gap-1 mb-2">
-                        <button onclick="randomizeSetup()" class="py-1 btn-mini rounded text-xs">🎲</button>
-                        <button onclick="backspaceSetup()" class="py-1 btn-mini rounded text-xs">⌫</button>
-                        <button onclick="resetSetupUI()" class="py-1 btn-mini rounded text-xs text-red-400">🗑️</button>
+                    <label id="setup-label" class="text-[9px] opacity-50 uppercase font-bold mb-2">Secret Code</label>
+                    <div id="setup-slots" class="flex justify-center gap-1.5 mb-3"></div>
+                    <div id="setup-keypad" class="grid grid-cols-5 gap-1.5 mb-3"></div>
+                    <div class="grid grid-cols-3 gap-1.5 mb-3">
+                        <button onclick="randomizeSetup()" class="py-2 btn-mini rounded text-sm">🎲</button>
+                        <button onclick="backspaceSetup()" class="py-2 btn-mini rounded text-sm">⌫</button>
+                        <button onclick="resetSetupUI()" class="py-2 btn-mini rounded text-sm text-red-400">🗑️</button>
                     </div>
-                    <button id="start-btn" onclick="handleStartOrNext()" disabled class="w-full py-2 bg-cyan-500 text-black font-bold rounded-lg opacity-50 text-[11px] uppercase tracking-widest">Ready</button>
-                    <p id="online-waiting-info" class="hidden text-[8px] text-center mt-1 opacity-50 animate-pulse font-bold uppercase">Ready! Wait Partner...</p>
+                    <button id="start-btn" onclick="handleStartOrNext()" disabled class="w-full py-2.5 bg-cyan-500 text-black font-bold rounded-lg opacity-50 text-xs uppercase tracking-widest">Ready</button>
+                    <p id="online-waiting-info" class="hidden text-[9px] text-center mt-2 opacity-50 animate-pulse font-bold uppercase">Ready! Wait Partner...</p>
                 </div>
             </div>
         </div>
@@ -318,57 +342,62 @@
     <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
+            <!-- P1 PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
-                <h3 id="p1-panel-label" class="text-center text-[9px] font-bold opacity-60 mb-1 border-b border-white/10 pb-1 uppercase tracking-widest">YOU</h3>
+                <h3 id="p1-panel-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">YOU</h3>
                 <div class="history-list" id="playerHistory"></div>
-                <div id="playerStatBox" class="mt-1 stat-box shrink-0 font-bold">
-                    <div class="text-[7px] opacity-40 uppercase">PATTERNS</div>
-                    <div id="playerRemaining" class="text-sm font-mono text-cyan-400 leading-none">---</div>
-                    <div id="playerProb" class="text-[10px] font-mono text-cyan-400 mt-0.5">0%</div>
+                <div id="playerStatBox" class="mt-2 stat-box shrink-0 font-bold p-2">
+                    <div class="text-[8px] opacity-40 uppercase">PATTERNS</div>
+                    <div id="playerRemaining" class="text-sm font-mono text-cyan-400 leading-none my-1">---</div>
+                    <div id="playerProb" class="text-[11px] font-mono text-cyan-400">0%</div>
                 </div>
             </div>
 
+            <!-- CENTER CONTROLS -->
             <div class="flex flex-col w-2/4 gap-2">
-                <div class="glass-panel p-2 flex-1 flex flex-col justify-center relative">
-                    <button onclick="handleSmartExit()" class="absolute top-1 right-2 text-[8px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold">Back</button>
-                    <div class="text-center mb-2">
-                        <p id="game-input-label" class="text-[8px] opacity-40 mb-1 uppercase font-bold">Guess</p>
-                        <div class="flex justify-center gap-1" id="inputSlots"></div>
+                <div class="glass-panel p-3 flex-1 flex flex-col justify-center relative">
+                    <button onclick="handleSmartExit()" class="absolute top-2 right-3 text-[9px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold">Back</button>
+                    <div class="text-center mb-3">
+                        <p id="game-input-label" class="text-[9px] opacity-40 mb-1.5 uppercase font-bold">Guess</p>
+                        <!-- 入力枠 -->
+                        <div class="flex justify-center gap-1.5" id="inputSlots"></div>
                     </div>
-                    <div id="input-controls" class="space-y-1.5 max-w-[200px] mx-auto w-full">
-                        <div class="grid grid-cols-5 gap-1" id="gameKeypad"></div>
-                        <div class="grid grid-cols-4 gap-1">
-                            <button onclick="randomizeGuess()" class="py-1.5 btn-mini rounded-lg text-xs">🎲</button>
-                            <button onclick="backspaceGuess()" class="py-1.5 btn-mini rounded-lg text-xs">⌫</button>
-                            <button onclick="clearCurrentGuess()" class="py-1.5 btn-mini rounded-lg text-xs text-red-400">🗑️</button>
-                            <button id="launchBtn" onclick="playerAction()" disabled class="btn-launch rounded-lg text-[9px] uppercase font-bold shadow-lg">Launch</button>
+                    <div id="input-controls" class="space-y-2 max-w-[240px] mx-auto w-full">
+                        <!-- ボタン -->
+                        <div class="grid grid-cols-5 gap-1.5" id="gameKeypad"></div>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="randomizeGuess()" class="py-2 btn-mini rounded-lg text-sm">🎲</button>
+                            <button onclick="backspaceGuess()" class="py-2 btn-mini rounded-lg text-sm">⌫</button>
+                            <button onclick="clearCurrentGuess()" class="py-2 btn-mini rounded-lg text-sm text-red-400">🗑️</button>
+                            <button id="launchBtn" onclick="playerAction()" disabled class="btn-launch rounded-lg text-[10px] uppercase font-bold shadow-lg">Launch</button>
                         </div>
                     </div>
-                    <div id="waiting-opponent-msg" class="hidden text-center py-2 bg-white/5 rounded-lg border border-white/10">
-                        <p class="text-[9px] tracking-widest animate-pulse text-cyan-400 font-bold uppercase italic">Scanning Channel...</p>
+                    <div id="waiting-opponent-msg" class="hidden text-center py-3 bg-white/5 rounded-lg border border-white/10">
+                        <p class="text-[10px] tracking-widest animate-pulse text-cyan-400 font-bold uppercase italic">Scanning Channel...</p>
                     </div>
                 </div>
                 
-                <div id="bottom-info-panel" class="glass-panel p-1.5 flex flex-col items-center justify-center h-20 border-cyan-500/20 shrink-0">
+                <div id="bottom-info-panel" class="glass-panel p-2 flex flex-col items-center justify-center h-24 border-cyan-500/20 shrink-0">
                     <div id="turn-info-container" class="text-center">
-                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5 font-bold">Active Turn</p>
-                        <div id="turn-indicator-text" class="turn-indicator text-xl font-mono turn-active text-cyan-400 font-bold">YOUR TURN</div>
-                        <div id="p1-victory-flag" class="hidden text-[7px] text-yellow-400 mt-0.5 uppercase font-bold">Success! Waiting Partner...</div>
+                        <p class="text-[8px] opacity-30 tracking-widest uppercase mb-1 font-bold">Active Turn</p>
+                        <div id="turn-indicator-text" class="turn-indicator text-2xl font-mono turn-active text-cyan-400 font-bold">YOUR TURN</div>
+                        <div id="p1-victory-flag" class="hidden text-[8px] text-yellow-400 mt-1 uppercase font-bold">Success! Waiting Partner...</div>
                     </div>
                     <div id="secret-code-display" class="hidden flex flex-col items-center">
-                        <p class="text-[7px] opacity-30 tracking-widest uppercase mb-0.5 font-bold">Local Secret</p>
-                        <div id="displayMySecretBig" class="text-3xl font-mono tracking-[0.2rem] text-cyan-500 font-bold leading-none">----</div>
+                        <p class="text-[8px] opacity-30 tracking-widest uppercase mb-1 font-bold">Local Secret</p>
+                        <div id="displayMySecretBig" class="text-4xl font-mono tracking-[0.2rem] text-cyan-500 font-bold leading-none">----</div>
                     </div>
                 </div>
             </div>
 
+            <!-- P2 PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
-                <h3 id="p2-name-label" class="text-center text-[9px] font-bold opacity-60 mb-1 border-b border-white/10 pb-1 uppercase tracking-widest">CPU</h3>
+                <h3 id="p2-name-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">CPU</h3>
                 <div class="history-list" id="cpuHistory"></div>
-                <div id="cpuStatBox" class="mt-1 stat-box shrink-0 font-bold">
-                    <div class="text-[7px] opacity-40 uppercase">PATTERNS</div>
-                    <div id="cpuRemaining" class="text-sm font-mono text-pink-500 leading-none">---</div>
-                    <div id="cpuProb" class="text-[10px] font-mono text-pink-500 mt-0.5">0%</div>
+                <div id="cpuStatBox" class="mt-2 stat-box shrink-0 font-bold p-2">
+                    <div class="text-[8px] opacity-40 uppercase">PATTERNS</div>
+                    <div id="cpuRemaining" class="text-sm font-mono text-pink-500 leading-none my-1">---</div>
+                    <div id="cpuProb" class="text-[11px] font-mono text-pink-500">0%</div>
                 </div>
             </div>
         </div>
@@ -376,10 +405,10 @@
 
     <!-- RESULT OVERLAY -->
     <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state backdrop-blur-md">
-        <div class="text-center p-6 glass-panel border-cyan-500 border-2 shadow-2xl max-w-xs w-full font-bold">
-            <h2 id="result-title" class="text-4xl font-bold mb-2 tracking-tighter uppercase italic text-cyan-400">Result</h2>
-            <p id="result-body" class="mb-4 opacity-70 text-sm font-bold"></p>
-            <button onclick="handleSmartExit()" class="px-8 py-2 bg-white text-black font-bold rounded-full hover:bg-cyan-400 transition-all uppercase text-xs">Back to Base</button>
+        <div class="text-center p-8 glass-panel border-cyan-500 border-2 shadow-2xl max-w-sm w-full font-bold">
+            <h2 id="result-title" class="text-5xl font-bold mb-3 tracking-tighter uppercase italic text-cyan-400">Result</h2>
+            <p id="result-body" class="mb-5 opacity-70 text-base font-bold"></p>
+            <button onclick="handleSmartExit()" class="px-8 py-2.5 bg-white text-black font-bold rounded-full hover:bg-cyan-400 transition-all uppercase text-sm">Back to Base</button>
         </div>
     </div>
 
@@ -387,19 +416,25 @@
         // ==========================================
         // 1. AUDIO ENGINE & GLOBAL FUNCTIONS
         // ==========================================
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const masterCompressor = audioCtx.createDynamicsCompressor();
-        masterCompressor.threshold.setValueAtTime(-10, audioCtx.currentTime);
-        masterCompressor.connect(audioCtx.destination);
-        const bgmGain = audioCtx.createGain();
-        const seGain = audioCtx.createGain();
-        bgmGain.connect(masterCompressor); seGain.connect(masterCompressor);
-        
+        let audioCtx = null;
+        let masterCompressor, bgmGain, seGain;
         let currentBgmVol = 0.5, currentSeVol = 0.5;
         let prevBgmVol = 0.5, prevSeVol = 0.5;
         let isBGMStarted = false, bgmStep = 0;
-        bgmGain.gain.setValueAtTime(0, audioCtx.currentTime);
-        seGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterCompressor = audioCtx.createDynamicsCompressor();
+            masterCompressor.threshold.setValueAtTime(-10, audioCtx.currentTime);
+            masterCompressor.connect(audioCtx.destination);
+            bgmGain = audioCtx.createGain();
+            seGain = audioCtx.createGain();
+            bgmGain.connect(masterCompressor); 
+            seGain.connect(masterCompressor);
+            bgmGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            seGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        }
 
         const sfx = {
             tap: () => playTone(1200, 'sine', 0.05, 0.08),
@@ -411,6 +446,7 @@
         };
 
         function playTone(freq, type, duration, vol=0.1, output=seGain) {
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
@@ -422,10 +458,14 @@
         }
 
         function handleUserInteraction() {
-            if (audioCtx.state === 'suspended') audioCtx.resume().then(() => {
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                const p = audioCtx.resume();
+                if(p) p.catch(e => console.log(e));
+                
                 bgmGain.gain.linearRampToValueAtTime(currentBgmVol, audioCtx.currentTime + 0.5);
                 seGain.gain.linearRampToValueAtTime(currentSeVol, audioCtx.currentTime + 0.1);
-            });
+            }
             if (!isBGMStarted) {
                 isBGMStarted = true;
                 setInterval(() => {
@@ -439,13 +479,17 @@
         function updateVolume(type, val) {
             const v = parseFloat(val);
             if (type === 'bgm') {
-                currentBgmVol = v; bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
-                document.getElementById('bgmLabel').innerText = Math.round(v * 100);
+                currentBgmVol = v; 
+                if (bgmGain) bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
+                const label = document.getElementById('bgmLabel');
+                if(label) label.innerText = Math.round(v * 100);
                 if(v > 0) prevBgmVol = v;
                 updateMuteIcon('bgm', v === 0);
             } else {
-                currentSeVol = v; seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
-                document.getElementById('seLabel').innerText = Math.round(v * 100);
+                currentSeVol = v; 
+                if(seGain) seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
+                const label = document.getElementById('seLabel');
+                if(label) label.innerText = Math.round(v * 100);
                 if(v > 0) prevSeVol = v;
                 updateMuteIcon('se', v === 0);
             }
@@ -466,10 +510,11 @@
         function updateMuteIcon(type, isMuted) {
             const iconId = type === 'bgm' ? 'bgmMuteIcon' : 'seMuteIcon';
             const icon = document.getElementById(iconId);
+            if (!icon) return;
             if (isMuted) {
-                icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="#ff4444"><path d="M19 6.41l-1.41-1.41-5.59 5.59-5.59-5.59-1.41 1.41 5.59 5.59-5.59 5.59 1.41 1.41 5.59-5.59 5.59 5.59 1.41-1.41-5.59-5.59z"/></svg>';
+                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line></svg>';
             } else {
-                icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 17h-2v-10h2v10zm14-10v10l-9-5 9-5zm2 12h-22v-14h22v22z"/></svg>';
+                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
             }
         }
 
@@ -493,8 +538,9 @@
         let myUserName = "Guest";
         let currentRoomId = null;
         let myPlayerNum = null;
-        let myReady = false;
-        let remoteReady = false;
+        let partnerName = "Partner";
+        let hostReady = false;
+        let guestReady = false;
 
         function disbandRoom() {
             if (peer) {
@@ -502,9 +548,9 @@
                 peer = null;
             }
             conn = null;
-            myReady = false;
-            remoteReady = false;
             currentRoomId = null;
+            hostReady = false;
+            guestReady = false;
         }
 
         function createRoom() {
@@ -513,11 +559,13 @@
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
 
             disbandRoom();
-            peer = new Peer('HB-' + rawId);
+            // 部屋IDに接頭辞をつけてPeerJSサーバーに登録
+            peer = new Peer('HB-COSMIC-' + rawId);
             
             peer.on('open', (id) => {
                 currentRoomId = rawId;
                 myPlayerNum = 1;
+                config.mode = 'online';
                 enterOnlineSetup();
             });
 
@@ -541,10 +589,10 @@
             if(!rawId) return showError('join', 'Need Password');
             
             disbandRoom();
-            peer = new Peer(); // Guest uses random ID
+            peer = new Peer(); // ゲストはランダムIDで起動
             
             peer.on('open', () => {
-                const tempConn = peer.connect('HB-' + rawId);
+                const tempConn = peer.connect('HB-COSMIC-' + rawId);
                 tempConn.on('open', () => {
                     tempConn.send({ type: 'request-preview' });
                 });
@@ -557,7 +605,7 @@
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
                         document.getElementById('join-preview').classList.remove('hidden');
                         document.getElementById('search-btn').classList.add('hidden');
-                        conn = tempConn; // Confirmed
+                        conn = tempConn; // 接続を確定
                     }
                 });
                 setTimeout(() => { if(!conn) showError('join', 'Not Found or Playing'); }, 3000);
@@ -567,6 +615,7 @@
         function confirmJoin() {
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
             myPlayerNum = 2;
+            config.mode = 'online';
             conn.send({ type: 'guest-joined', guestName: myUserName });
             setupConnection();
             enterOnlineSetup();
@@ -579,18 +628,19 @@
                 }
                 else if(data.type === 'init-config') {
                     config = data.config;
-                    document.getElementById('p2-name-label').innerText = data.hostName || "Host";
+                    config.mode = 'online';
+                    partnerName = data.hostName || "Host";
                 }
                 else if(data.type === 'guest-joined') {
-                    document.getElementById('p2-name-label').innerText = data.guestName || "Guest";
+                    partnerName = data.guestName || "Guest";
                 }
                 else if(data.type === 'ready') {
-                    remoteReady = true;
-                    p2Secret = data.secret;
+                    if(myPlayerNum === 1) guestReady = true; else hostReady = true;
+                    if(myPlayerNum === 1) p2Secret = data.secret; else p1Secret = data.secret;
                     checkOnlineStart();
                 }
                 else if(data.type === 'cancel-ready') {
-                    remoteReady = false;
+                    if(myPlayerNum === 1) guestReady = false; else hostReady = false;
                 }
                 else if(data.type === 'start-game') {
                     currentPlayer = data.startPlayer;
@@ -611,7 +661,8 @@
         }
 
         function checkOnlineStart() {
-            if (myPlayerNum === 1 && myReady && remoteReady) {
+            if (myPlayerNum === 1 && hostReady && guestReady) {
+                // ホスト側で先攻後攻を決定し、ゲストに通知
                 currentPlayer = Math.random() > 0.5 ? 1 : 2;
                 conn.send({ type: 'start-game', startPlayer: currentPlayer });
                 startGameOnline();
@@ -621,7 +672,7 @@
         // ==========================================
         // 3. GAME STATE & NAVIGATION LOGIC
         // ==========================================
-        let config = { digits: 4, level: 2, timeLimit: 0, showP1Stats: true, mode: '1p' };
+        let config = { digits: 4, level: 2, timeLimit: 0, showP1Stats: true, showP2Stats: true, mode: '1p' };
         let setupState = { phase: 'p1', p1Secret: [], p2Secret: [] };
         let p1Secret = [], p2Secret = [], p1History = [], p2History = [];
         let currentGuess = [], activeIdx = 0, turn = 1, currentPlayer = 1;
@@ -633,7 +684,7 @@
         }
 
         function showMainMenu() {
-            if (config.mode === 'online') disbandRoom();
+            disbandRoom();
             clearInterval(gameTimerInterval);
             hideAll();
             document.getElementById('main-menu').classList.remove('hidden-state');
@@ -660,8 +711,6 @@
             document.getElementById('setup-screen').classList.remove('hidden-state');
             document.getElementById('setup-options').classList.add('hidden-state');
             document.getElementById('setup-waiting-msg').classList.remove('hidden-state');
-            if(myPlayerNum === 1) document.getElementById('p1-panel-label').innerText = myUserName;
-            else document.getElementById('p1-panel-label').innerText = myUserName;
             resetSetupUI();
         }
 
@@ -670,15 +719,21 @@
                 if (document.getElementById('start-btn').classList.contains('hidden')) {
                     // Cancel Ready
                     if(conn && conn.open) conn.send({ type: 'cancel-ready' });
-                    myReady = false;
+                    if(myPlayerNum === 1) hostReady = false; else guestReady = false;
+                    
                     document.getElementById('start-btn').classList.remove('hidden');
                     document.getElementById('online-waiting-info').classList.add('hidden');
-                    setupState.p1Secret = Array(config.digits).fill(null); activeIdx = 0;
+                    
+                    // Reset input
+                    setupState.p1Secret = Array(config.digits).fill(null); 
+                    activeIdx = 0;
                     renderSetupSlots(); renderSetupKeypad(); updateSetupUI();
                 } else {
+                    disbandRoom();
                     showOnlineLobby();
                 }
             } else if (config.mode === '2p' && setupState.phase === 'p2') {
+                // オフライン2PでP2入力中に戻る場合は、1Pもリセットする
                 setupState.phase = 'p1';
                 setupState.p1Secret = Array(config.digits).fill(null);
                 setupState.p2Secret = Array(config.digits).fill(null);
@@ -695,6 +750,7 @@
             document.getElementById('exitBtn').classList.add('hidden');
             
             if (config.mode === 'online') {
+                disbandRoom();
                 showOnlineLobby();
             } else {
                 setupState.p1Secret = Array(config.digits).fill(null); 
@@ -709,19 +765,20 @@
 
         // --- SETUP LOGIC ---
         function updateOnlineTimeDisplay(val) { config.timeLimit = parseInt(val); document.getElementById('onlineTimeDisplay').innerText = val == 0 ? "♾️" : val + "s"; }
-        function setOnlineDigits(n) { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1 rounded bg-white/5 border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : ''}`; }); }
+        function setOnlineDigits(n) { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded bg-white/5 border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : ''}`; }); }
         
         function setMode(m) {
             config.mode = m;
-            document.getElementById('btn-m1p').className = `flex-1 py-1 rounded border border-white/10 text-[9px] font-bold ${m==='1p'?'bg-cyan-600':'bg-white/5'}`;
-            document.getElementById('btn-m2p').className = `flex-1 py-1 rounded border border-white/10 text-[9px] font-bold ${m==='2p'?'bg-cyan-600':'bg-white/5'}`;
+            document.getElementById('btn-m1p').className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${m==='1p'?'bg-cyan-600':'bg-white/5'}`;
+            document.getElementById('btn-m2p').className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${m==='2p'?'bg-cyan-600':'bg-white/5'}`;
             document.getElementById('level-setting').style.display = m === '1p' ? 'block' : 'none';
-            document.getElementById('p2-name-label').innerText = m === '1p' ? 'CPU' : 'PLAYER 2';
+            document.getElementById('p2-name-label').innerText = m === '1p' ? 'CPU' : '2P';
+            document.getElementById('lbl-p2-stat').innerText = m === '1p' ? 'CPU PERCENT' : '2P PERCENT';
             resetSetupUI();
         }
 
-        function setDigits(n) { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); resetSetupUI(); }
-        function setLevel(n) { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1 rounded border border-white/10 text-[9px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; }
+        function setDigits(n) { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); resetSetupUI(); }
+        function setLevel(n) { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; }
         function updateTimeSetting(val) { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; }
 
         function resetSetupUI() { 
@@ -752,7 +809,7 @@
             const container = document.getElementById('setup-keypad'); container.innerHTML = '';
             const target = setupState.phase === 'p1' ? setupState.p1Secret : setupState.p2Secret;
             for(let i=0; i<=9; i++) {
-                const btn = document.createElement('button'); btn.className = "py-1 bg-white/5 border border-white/10 rounded text-[10px] hover:bg-white/10 disabled:opacity-10 font-bold";
+                const btn = document.createElement('button'); btn.className = "py-1.5 bg-white/5 border border-white/10 rounded text-sm hover:bg-white/10 disabled:opacity-10 font-bold";
                 btn.innerText = i; btn.disabled = target.includes(i);
                 btn.onclick = () => { sfx.tap(); target[activeIdx] = i; let next = target.indexOf(null); if(next !== -1) activeIdx = next; renderSetupSlots(); renderSetupKeypad(); checkReady(); };
                 container.appendChild(btn);
@@ -780,9 +837,10 @@
                 document.getElementById('start-btn').classList.add('hidden'); 
                 document.getElementById('online-waiting-info').classList.remove('hidden');
                 
-                myReady = true;
-                p1Secret = [...setupState.p1Secret];
-                if(conn && conn.open) conn.send({ type: 'ready', secret: p1Secret });
+                if(myPlayerNum === 1) hostReady = true; else guestReady = true;
+                if(myPlayerNum === 1) p1Secret = [...setupState.p1Secret]; else p2Secret = [...setupState.p1Secret];
+                
+                if(conn && conn.open) conn.send({ type: 'ready', secret: setupState.p1Secret });
                 checkOnlineStart();
 
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
@@ -794,20 +852,32 @@
 
         function startGameOnline() {
             document.getElementById('p1-panel-label').innerText = myUserName;
+            document.getElementById('p2-name-label').innerText = partnerName;
+            config.showP1Stats = document.getElementById('onlineStatsToggle').checked;
+            config.showP2Stats = document.getElementById('onlineStatsToggle').checked;
             startGameUI();
         }
 
         function startGame() { 
+            config.showP1Stats = document.getElementById('p1StatsToggle').checked;
+            config.showP2Stats = document.getElementById('p2StatsToggle').checked;
+
             p1Secret = [...setupState.p1Secret]; 
             p2Secret = config.mode === '1p' ? genRandArr(config.digits) : [...setupState.p2Secret]; 
             currentPlayer = 1; turn = 1; 
+            
+            document.getElementById('p1-panel-label').innerText = "1P";
+            document.getElementById('p2-name-label').innerText = config.mode === '1p' ? "CPU" : "2P";
+            
             startGameUI(); 
         }
 
         function startGameUI() {
             sfx.launch(); allPerms = genPerms(config.digits); p1Knowledge = [...allPerms]; p2Knowledge = [...allPerms];
-            document.getElementById('playerStatBox').style.display = 'block'; 
-            document.getElementById('cpuStatBox').style.display = config.mode === '1p' ? 'block' : 'none';
+            
+            document.getElementById('playerStatBox').style.display = config.showP1Stats ? 'block' : 'none'; 
+            document.getElementById('cpuStatBox').style.display = config.showP2Stats ? 'block' : 'none';
+            
             const secretDisplay = document.getElementById('secret-code-display');
             if (config.mode === '1p') { 
                 secretDisplay.classList.remove('hidden'); 
@@ -824,11 +894,18 @@
 
         function initTurn() {
             currentGuess = Array(config.digits).fill(null); activeIdx = 0; document.getElementById('turnCounter').innerText = turn;
-            const isMyTurn = (config.mode !== 'online') || (currentPlayer === myPlayerNum);
+            
+            let isMyTurn = true;
+            if (config.mode === 'online') isMyTurn = (currentPlayer === myPlayerNum);
+            
             const indicator = document.getElementById('turn-indicator-text');
-            indicator.innerText = isMyTurn ? 'YOUR TURN' : 'ENEMY TURN'; indicator.style.color = currentPlayer === 1 ? 'var(--neon-blue)' : 'var(--neon-pink)';
+            indicator.innerText = isMyTurn ? 'YOUR TURN' : 'ENEMY TURN'; 
+            indicator.style.color = currentPlayer === 1 ? 'var(--neon-blue)' : 'var(--neon-pink)';
+            
             document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisTurn);
-            document.getElementById('input-controls').classList.toggle('hidden', !isMyTurn); document.getElementById('waiting-opponent-msg').classList.toggle('hidden', isMyTurn);
+            document.getElementById('input-controls').classList.toggle('hidden', !isMyTurn); 
+            document.getElementById('waiting-opponent-msg').classList.toggle('hidden', isMyTurn);
+            
             renderGameSlots(); renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -845,7 +922,7 @@
         function renderGameKeypad() {
             const container = document.getElementById('gameKeypad'); container.innerHTML = '';
             for(let i=0; i<=9; i++) {
-                const btn = document.createElement('button'); btn.className = "py-1 bg-white/5 border border-white/10 rounded-lg text-xs hover:bg-white/10 active:scale-95 transition-all disabled:opacity-10 font-bold";
+                const btn = document.createElement('button'); btn.className = "py-2 bg-white/5 border border-white/10 rounded-lg text-sm hover:bg-white/10 active:scale-95 transition-all disabled:opacity-10 font-bold";
                 btn.innerText = i; btn.disabled = currentGuess.includes(i) || isProcessing;
                 btn.onclick = () => { sfx.tap(); currentGuess[activeIdx] = i; let next = currentGuess.indexOf(null); if(next !== -1) activeIdx = next; renderGameSlots(); renderGameKeypad(); };
                 container.appendChild(btn);
@@ -855,29 +932,56 @@
         async function playerAction() {
             if (isProcessing) return;
             isProcessing = true; clearInterval(gameTimerInterval); sfx.launch();
-            const targetS = (config.mode === 'online' && myPlayerNum === 1) ? p2Secret : (myPlayerNum === 2 ? p1Secret : p2Secret);
-            const res = checkResult(currentGuess, targetS);
             
-            if(config.mode === 'online') {
-                if(conn && conn.open) conn.send({ type: 'action', guess: currentGuess, res: res });
+            let targetS;
+            if (config.mode === 'online') targetS = myPlayerNum === 1 ? p2Secret : p1Secret;
+            else targetS = currentPlayer === 1 ? p2Secret : p1Secret;
+            
+            const res = checkResult(currentGuess, targetS);
+            const guessCopy = [...currentGuess];
+            
+            if(config.mode === 'online' && conn && conn.open) {
+                conn.send({ type: 'action', guess: guessCopy, res: res });
             }
             
-            p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(currentGuess, p); return r.hits === res.hits && r.blows === res.blows; });
-            await showAnnounce(currentGuess.join(''), res, 1); addLog('player', [...currentGuess], res);
-            if (res.hits === config.digits) p1WonThisTurn = true;
-            if (config.mode === '1p') { const cpuWon = await cpuTurn(); checkGameOver(cpuWon); } else { currentPlayer = currentPlayer === 1 ? 2 : 1; initTurn(); }
+            await processLocalAction(currentPlayer, guessCopy, res);
+        }
+
+        async function processLocalAction(player, guess, res) {
+            if (player === 1 || (config.mode === 'online' && myPlayerNum === 1)) {
+                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(guess.join(''), res, 1); 
+                addLog('player', guess, res);
+                
+                if (res.hits === config.digits) p1WonThisTurn = true;
+                
+                if (config.mode === '1p') { 
+                    const cpuWon = await cpuTurn(); 
+                    checkGameOver(cpuWon); 
+                } else { 
+                    currentPlayer = 2; 
+                    isProcessing = false; 
+                    initTurn(); 
+                }
+            } else {
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(guess.join(''), res, 2); 
+                addLog('cpu', guess, res);
+                
+                checkGameOver(res.hits === config.digits);
+            }
         }
 
         async function handleRemoteAction(actionData) {
             isProcessing = true; clearInterval(gameTimerInterval);
-            const res = actionData.res; p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-            await showAnnounce(actionData.guess.join(''), res, 2); addLog('cpu', actionData.guess, res); checkGameOver(res.hits === config.digits);
+            const remoteP = myPlayerNum === 1 ? 2 : 1;
+            await processLocalAction(remoteP, actionData.guess, actionData.res);
         }
 
         async function cpuTurn() {
             await new Promise(r => setTimeout(r, 1000));
-            // CPU Logic: Hard uses deduction only
-            let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : genRandArr(config.digits);
+            // CPU Logic: Hard uses deduction only from p2Knowledge, without peeking at p1Secret
+            let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : allPerms[Math.floor(Math.random() * allPerms.length)];
             const res = checkResult(guess, p1Secret); 
             p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
             await showAnnounce(guess.join(''), res, 2); addLog('cpu', guess, res); return res.hits === config.digits;
@@ -885,24 +989,49 @@
 
         function checkGameOver(p2Won = false) {
             if (p1WonThisTurn && p2Won) endGame("DRAW", "Both solved!"); 
-            else if (p1WonThisTurn) endGame("YOU WIN", "Solved first!");
-            else if (p2Won) endGame("ENEMY WIN", "Enemy solved!"); 
-            else { if (currentPlayer === 1) turn++; isProcessing = false; initTurn(); }
+            else if (p1WonThisTurn) {
+                const winner = config.mode === 'online' ? "YOU" : "1P";
+                endGame(`${winner} WIN`, "Solved first!");
+            }
+            else if (p2Won) {
+                let winner;
+                if(config.mode === 'online') winner = "ENEMY";
+                else if(config.mode === '1p') winner = "CPU";
+                else winner = "2P";
+                endGame(`${winner} WIN`, "Enemy solved!"); 
+            }
+            else { 
+                if (currentPlayer === 1 || config.mode === 'online') {
+                    turn++; 
+                } else {
+                    currentPlayer = 1;
+                    turn++;
+                }
+                isProcessing = false; 
+                initTurn(); 
+            }
         }
 
         async function showAnnounce(num, res, player) {
             return new Promise(resolve => {
                 const announce = document.getElementById('big-announce'); const bigNum = document.getElementById('big-number'), bigRes = document.getElementById('big-result'), bigP = document.getElementById('big-player');
                 bigNum.innerText = num; bigRes.innerHTML = `<span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span>`;
-                bigP.innerText = player === 1 ? (config.mode==='online'?"YOU":"P1") : (config.mode==='online'?"PARTNER":"P2"); announce.classList.add('show'); sfx.scan();
+                
+                if (config.mode === 'online') {
+                    bigP.innerText = player === myPlayerNum ? "YOU" : "PARTNER";
+                } else {
+                    bigP.innerText = player === 1 ? "1P" : (config.mode === '1p' ? "CPU" : "2P");
+                }
+                
+                announce.classList.add('show'); sfx.scan();
                 setTimeout(() => { announce.classList.remove('show'); setTimeout(resolve, 300); }, 1000);
             });
         }
 
         function addLog(who, guess, res) {
             const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory'); const item = document.createElement('div');
-            item.className = "flex justify-between items-center p-1 bg-white/5 border border-white/5 rounded mb-1";
-            item.innerHTML = `<span class="font-mono text-[10px] tracking-widest ${who==='player'?'text-cyan-400':'text-pink-500'} font-bold">${guess.join('')}</span><span class="text-[9px]"><span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span></span>`;
+            item.className = "flex justify-between items-center p-1.5 bg-white/5 border border-white/5 rounded mb-1";
+            item.innerHTML = `<span class="font-mono text-[11px] tracking-widest ${who==='player'?'text-cyan-400':'text-pink-500'} font-bold">${guess.join('')}</span><span class="text-[10px]"><span class="hit">${res.hits}H</span> <span class="blow">${res.blows}B</span></span>`;
             list.appendChild(item); list.scrollTop = list.scrollHeight;
         }
 
@@ -924,7 +1053,7 @@
         function randomizeGuess() { currentGuess = genRandArr(config.digits); activeIdx = 0; sfx.launch(); renderGameSlots(); renderGameKeypad(); }
         function clearCurrentGuess() { currentGuess = Array(config.digits).fill(null); activeIdx = 0; sfx.delete(); renderGameSlots(); renderGameKeypad(); }
         function backspaceGuess() { for (let i = config.digits - 1; i >= 0; i--) { if (currentGuess[i] !== null) { currentGuess[i] = null; activeIdx = i; break; } } sfx.delete(); renderGameSlots(); renderGameKeypad(); }
-        function endGame(title, body) { clearInterval(gameTimerInterval); document.getElementById('result-title').innerText = title; document.getElementById('result-body').innerText = body; document.getElementById('overlay').classList.remove('hidden-state'); if (title.includes("WIN") || title.includes("YOU")) sfx.win(); else sfx.loss(); }
+        function endGame(title, body) { clearInterval(gameTimerInterval); document.getElementById('result-title').innerText = title; document.getElementById('result-body').innerText = body; document.getElementById('overlay').classList.remove('hidden-state'); if (title.includes("WIN") || title.includes("YOU") || title.includes("1P")) sfx.win(); else sfx.loss(); }
 
         // --- STAR BACKGROUND ---
         window.onload = () => {
@@ -945,6 +1074,10 @@
             window.addEventListener('resize', resize);
             resize();
             anim();
+            
+            // Init Icons
+            updateMuteIcon('bgm', false);
+            updateMuteIcon('se', false);
         };
     </script>
 </body>

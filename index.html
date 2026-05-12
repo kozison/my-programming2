@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hit&Blow</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vercelで設定なしで無料で通信するためのライブラリ (PeerJS) -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --space-black: #020205;
@@ -34,7 +36,6 @@
             border-radius: 8px;
         }
 
-        /* スロットを大きく修正 */
         .slot {
             width: 42px; height: 56px;
             border: 2px solid rgba(255, 255, 255, 0.15);
@@ -76,12 +77,11 @@
         }
         .btn-launch:disabled { opacity: 0.2; filter: grayscale(1); }
 
-        /* キーパッドのボタンも大きく */
         .btn-mini {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: 0.2s;
-            font-size: 1.1rem; /* 大きく */
+            font-size: 1.1rem;
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
         }
@@ -137,7 +137,7 @@
     <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
-            <p id="loading-text" class="text-[9px] tracking-widest uppercase opacity-60">Loading...</p>
+            <p id="loading-text" class="text-[9px] tracking-widest uppercase opacity-60">Connecting...</p>
         </div>
     </div>
 
@@ -192,10 +192,10 @@
 
     <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
-        <div class="max-w-[300px] w-full space-y-6">
+        <div class="max-w-[300px] w-full space-y-6 mx-auto">
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic">Hit&Blow</h1>
             
-            <button onclick="if(window.showOfflineSetup) window.showOfflineSetup()" class="menu-btn group">
+            <button onclick="if(window.showOfflineSetup) window.showOfflineSetup()" class="menu-btn group mx-auto">
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-white group-hover:text-cyan-400 uppercase">Offline 👤🤖</h2>
@@ -205,7 +205,7 @@
                 </div>
             </button>
 
-            <button onclick="if(window.showOnlineLobby) window.showOnlineLobby()" class="menu-btn group">
+            <button onclick="if(window.showOnlineLobby) window.showOnlineLobby()" class="menu-btn group mx-auto">
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-white group-hover:text-cyan-400 uppercase">Online 👥</h2>
@@ -219,7 +219,7 @@
 
     <!-- ONLINE LOBBY -->
     <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
-        <div class="glass-panel p-6 max-w-xl w-full space-y-5">
+        <div class="glass-panel p-6 max-w-xl w-full space-y-5 mx-auto">
             <div class="flex justify-between items-center">
                 <h1 class="text-base font-bold tracking-widest uppercase">Online Lobby</h1>
                 <button onclick="if(window.showMainMenu) window.showMainMenu()" class="text-[10px] opacity-50 hover:opacity-100 uppercase underline font-bold">Back</button>
@@ -281,7 +281,7 @@
 
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
-        <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative">
+        <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative mx-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
                 <h1 class="text-xl font-bold tracking-widest uppercase">Setup</h1>
                 <button onclick="if(window.handleSmartBackFromSetup) window.handleSmartBackFromSetup()" class="text-[10px] opacity-50 hover:opacity-100 uppercase underline font-bold">Back</button>
@@ -334,7 +334,6 @@
 
                 <div class="flex flex-col justify-center">
                     <label id="setup-label" class="text-[9px] opacity-50 uppercase font-bold mb-2">Secret Code</label>
-                    <!-- スロットを大きく -->
                     <div id="setup-slots" class="flex justify-center gap-2 mb-4"></div>
                     <div id="setup-keypad" class="grid grid-cols-5 gap-1.5 mb-3"></div>
                     <div class="grid grid-cols-3 gap-1.5 mb-3">
@@ -377,7 +376,7 @@
                             <button onclick="if(window.randomizeGuess) window.randomizeGuess()" class="py-2.5 btn-mini rounded-lg text-sm">🎲</button>
                             <button onclick="if(window.backspaceGuess) window.backspaceGuess()" class="py-2.5 btn-mini rounded-lg text-sm">⌫</button>
                             <button onclick="if(window.clearCurrentGuess) window.clearCurrentGuess()" class="py-2.5 btn-mini rounded-lg text-sm text-red-400">🗑️</button>
-                            <button id="launchBtn" onclick="if(window.playerAction) window.playerAction()" disabled class="btn-launch rounded-lg text-[10px] uppercase font-bold shadow-lg">Launch</button>
+                            <button id="launchBtn" onclick="if(window.playerAction) window.playerAction()" disabled class="btn-launch rounded-lg text-[12px] uppercase font-bold shadow-lg">OK</button>
                         </div>
                     </div>
                     <div id="waiting-opponent-msg" class="hidden text-center py-4 bg-white/5 rounded-lg border border-white/10">
@@ -404,7 +403,7 @@
                 <div class="history-list" id="cpuHistory"></div>
                 <div id="cpuStatBox" class="mt-2 stat-box shrink-0 font-bold p-2">
                     <div class="text-[8px] opacity-40 uppercase">PATTERNS</div>
-                    <div id="cpuRemaining" class="text-base font-mono text-pink-500 leading-none my-1">---</div>
+                    <div id="cpuRemaining" class="text-sm font-mono text-pink-500 leading-none my-1">---</div>
                     <div id="cpuProb" class="text-[11px] font-mono text-pink-500">0%</div>
                 </div>
             </div>
@@ -420,51 +419,9 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
+    <script>
         // ==========================================
-        // 1. FIREBASE INITIALIZATION
-        // ==========================================
-        let db = null;
-        let auth = null;
-        try {
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch (e) {
-            console.warn("Firebase Init Skipped. Running without backend.");
-        }
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-blow-final-v8';
-        let user = null;
-        let currentRoomId = null;
-        let roomUnsubscribe = null;
-        let myPlayerNum = null;
-        let myUserName = "Guest";
-        let partnerName = "Partner";
-
-        const initAuth = async () => {
-            if (!auth) return;
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {}
-        };
-        initAuth();
-
-        if (auth) {
-            onAuthStateChanged(auth, u => { user = u; });
-        }
-
-        // ==========================================
-        // 2. AUDIO ENGINE & GLOBAL FUNCTIONS
+        // 1. AUDIO ENGINE & GLOBAL FUNCTIONS
         // ==========================================
         let audioCtx = null;
         let masterCompressor, bgmGain, seGain;
@@ -579,9 +536,180 @@
         }
 
         // ==========================================
+        // 2. PEER.JS ONLINE LOGIC
+        // ==========================================
+        let peer = null;
+        let conn = null;
+        let myUserName = "Guest";
+        let partnerName = "Partner";
+        let myPlayerNum = null;
+        
+        let hostReady = false;
+        let guestReady = false;
+
+        function disbandRoom() {
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            conn = null;
+            hostReady = false;
+            guestReady = false;
+        }
+
+        window.createRoom = () => {
+            const rawId = document.getElementById('create-room-id').value.trim().toUpperCase();
+            if(!rawId) return showError('create', 'パスワードを入力');
+            
+            const btn = document.getElementById('create-btn');
+            btn.innerText = "Creating...";
+            btn.disabled = true;
+
+            myUserName = document.getElementById('user-name-input').value.trim() || "Host";
+
+            disbandRoom();
+            peer = new Peer('HB-ROOM-' + rawId);
+            
+            peer.on('open', (id) => {
+                myPlayerNum = 1;
+                config.mode = 'online';
+                enterOnlineSetup();
+                btn.innerText = "Create Room";
+                btn.disabled = false;
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    showError('create', 'Already Used');
+                } else {
+                    showError('create', 'Connection Error');
+                }
+                btn.innerText = "Create Room";
+                btn.disabled = false;
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+            });
+        };
+
+        window.searchRoom = () => {
+            const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
+            if(!rawId) return showError('join', 'パスワードを入力');
+            
+            const btn = document.getElementById('search-btn');
+            btn.innerText = "Searching...";
+            btn.disabled = true;
+
+            disbandRoom();
+            peer = new Peer(); // Guest gets random ID
+            
+            peer.on('open', () => {
+                const tempConn = peer.connect('HB-ROOM-' + rawId);
+                
+                tempConn.on('open', () => {
+                    tempConn.send({ type: 'request-info' });
+                });
+
+                tempConn.on('data', data => {
+                    if(data.type === 'room-info') {
+                        document.getElementById('preview-id-text').innerText = rawId;
+                        document.getElementById('preview-host-name').innerText = data.hostName || "Host";
+                        document.getElementById('preview-digits').innerText = data.config.digits;
+                        document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
+                        document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
+                        
+                        document.getElementById('join-preview').classList.remove('hidden');
+                        btn.classList.add('hidden');
+                        conn = tempConn;
+                    }
+                });
+                
+                setTimeout(() => {
+                    if(!conn || !conn.open) {
+                        showError('join', 'Not Found or Playing');
+                        btn.innerText = "Search";
+                        btn.disabled = false;
+                    }
+                }, 3000);
+            });
+        };
+
+        window.confirmJoin = () => {
+            myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
+            myPlayerNum = 2;
+            config.mode = 'online';
+            conn.send({ type: 'guest-join', guestName: myUserName });
+            setupConnection();
+            enterOnlineSetup();
+        };
+
+        function setupConnection() {
+            conn.on('data', data => {
+                // Host receives this
+                if(data.type === 'request-info') {
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
+                }
+                // Host receives this
+                else if(data.type === 'guest-join') {
+                    partnerName = data.guestName || "Guest";
+                    document.getElementById('p2-name-label').innerText = partnerName;
+                }
+                // Guest receives this
+                else if(data.type === 'start') {
+                    config = data.config;
+                    config.mode = 'online';
+                    currentPlayer = data.startPlayer;
+                    partnerName = data.hostName;
+                    startGameOnline();
+                }
+                // Both receive
+                else if(data.type === 'ready') {
+                    if(myPlayerNum === 1) {
+                        guestReady = true;
+                        p2Secret = data.secret;
+                        checkOnlineStart();
+                    } else {
+                        hostReady = true;
+                        p1Secret = data.secret;
+                    }
+                }
+                else if(data.type === 'cancel-ready') {
+                    if(myPlayerNum === 1) guestReady = false;
+                    else hostReady = false;
+                }
+                else if(data.type === 'action') {
+                    window.handleRemoteAction(data);
+                }
+            });
+
+            conn.on('close', () => {
+                if(!document.getElementById('game-screen').classList.contains('hidden-state') || 
+                   !document.getElementById('setup-screen').classList.contains('hidden-state')) {
+                    alert("Connection lost with partner.");
+                    window.showOnlineLobby();
+                }
+            });
+        }
+
+        function checkOnlineStart() {
+            if (myPlayerNum === 1 && hostReady && guestReady) {
+                currentPlayer = Math.random() > 0.5 ? 1 : 2;
+                conn.send({ 
+                    type: 'start', 
+                    config: config,
+                    hostName: myUserName,
+                    startPlayer: currentPlayer 
+                });
+                startGameOnline();
+            }
+        }
+
+        // ==========================================
         // 3. GAME STATE AND LOGIC
         // ==========================================
-        let config = { digits: 4, level: 2, timeLimit: 0, showP1Stats: true, mode: '1p' };
+        let config = { digits: 4, level: 2, timeLimit: 0, showP1Stats: true, showP2Stats: true, mode: '1p' };
         let setupState = { phase: 'p1', p1Secret: [], p2Secret: [] };
         let p1Secret = [], p2Secret = [], p1History = [], p2History = [];
         let currentGuess = [], activeIdx = 0, turn = 1, currentPlayer = 1;
@@ -592,9 +720,9 @@
             document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen, #overlay').forEach(el => el.classList.add('hidden-state'));
         }
 
-        window.showMainMenu = async () => {
-            if (config.mode === 'online' && myPlayerNum === 1) await disbandRoom();
-            cleanupRoom();
+        window.showMainMenu = () => {
+            if (config.mode === 'online') disbandRoom();
+            clearInterval(gameTimerInterval);
             hideAll();
             document.getElementById('main-menu').classList.remove('hidden-state');
             document.getElementById('exitBtn').classList.add('hidden');
@@ -614,22 +742,23 @@
             document.getElementById('search-btn').classList.remove('hidden');
             document.getElementById('search-btn').innerText = "Search";
             document.getElementById('search-btn').disabled = false;
-            cleanupRoom();
+            disbandRoom();
         };
 
-        window.handleSmartBackFromSetup = async () => {
+        window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
                 if (document.getElementById('start-btn').classList.contains('hidden')) {
-                    if (db && currentRoomId) {
-                        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                        await updateDoc(roomRef, myPlayerNum === 1 ? { p1Ready: false, p1Secret: null } : { p2Ready: false, p2Secret: null });
-                    }
+                    // 準備完了をキャンセル
+                    if(conn && conn.open) conn.send({ type: 'cancel-ready' });
+                    if(myPlayerNum === 1) hostReady = false; else guestReady = false;
+                    
                     document.getElementById('start-btn').classList.remove('hidden');
                     document.getElementById('online-waiting-info').classList.add('hidden');
+                    
                     setupState.p1Secret = Array(config.digits).fill(null); activeIdx = 0;
                     window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
                 } else {
-                    if (myPlayerNum === 1) await disbandRoom();
+                    disbandRoom();
                     window.showOnlineLobby();
                 }
             } else if (config.mode === '2p' && setupState.phase === 'p2') {
@@ -642,7 +771,7 @@
             }
         };
 
-        window.handleSmartExit = async () => {
+        window.handleSmartExit = () => {
             clearInterval(gameTimerInterval);
             document.getElementById('game-screen').classList.add('hidden-state');
             document.getElementById('overlay').classList.add('hidden-state');
@@ -650,7 +779,7 @@
             document.getElementById('exitBtn').classList.add('hidden');
             
             if (config.mode === 'online') {
-                if (myPlayerNum === 1) await disbandRoom();
+                disbandRoom();
                 window.showOnlineLobby();
             } else {
                 setupState.p1Secret = Array(config.digits).fill(null);
@@ -663,149 +792,12 @@
             }
         };
 
-        async function disbandRoom() {
-            if (currentRoomId && db) {
-                try {
-                    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                    const snap = await getDoc(roomRef);
-                    if (snap.exists() && snap.data().state !== 'playing') {
-                        await deleteDoc(roomRef);
-                    }
-                } catch(e) {}
-            }
-        }
-
-        function cleanupRoom() {
-            if (roomUnsubscribe) roomUnsubscribe();
-            currentRoomId = null; myPlayerNum = null; clearInterval(gameTimerInterval);
-        }
-
         window.updateOnlineTimeDisplay = (val) => { config.timeLimit = parseInt(val); document.getElementById('onlineTimeDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-
-        window.createRoom = async () => {
-            const rawId = document.getElementById('create-room-id').value.trim().toUpperCase();
-            if(!rawId || !user || !db) return showError('create', 'Error');
-            myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
-            
-            const btn = document.getElementById('create-btn');
-            btn.innerText = "Creating...";
-            btn.disabled = true;
-
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-                const snap = await getDoc(roomRef);
-                if (snap.exists()) {
-                    const now = Date.now();
-                    const lastUpdate = snap.data().updatedAt || 0;
-                    if (now - lastUpdate < 3600000) {
-                        btn.innerText = "Create Room"; btn.disabled = false;
-                        return showError('create', 'Already Used');
-                    } else {
-                        await deleteDoc(roomRef);
-                    }
-                }
-                const roomData = {
-                    id: rawId, hostId: user.uid, hostName: myUserName, guestId: null,
-                    config: { digits: config.digits, timeLimit: config.timeLimit, showP1Stats: document.getElementById('onlineStatsToggle').checked, mode: 'online' },
-                    state: 'waiting', p1Ready: false, p2Ready: false, p1Secret: null, p2Secret: null, currentPlayer: 1, turn: 1, lastAction: null, updatedAt: Date.now()
-                };
-                await setDoc(roomRef, roomData); 
-                currentRoomId = rawId; myPlayerNum = 1; 
-                config.mode = 'online';
-                enterOnlineSetup();
-            } catch (err) { showError('create', 'Permission Error'); }
-            
-            btn.innerText = "Create Room"; btn.disabled = false;
-        };
-
-        window.searchRoom = async () => {
-            const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
-            if(!rawId || !db) return;
-            
-            const btn = document.getElementById('search-btn');
-            btn.innerText = "Searching...";
-            btn.disabled = true;
-
-            try {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-                const snap = await getDoc(roomRef);
-                
-                if (!snap.exists()) {
-                    showError('join', 'Not Found');
-                    btn.innerText = "Search"; btn.disabled = false;
-                    return;
-                }
-                const data = snap.data();
-                if (data.state !== 'waiting' || (Date.now() - data.updatedAt > 3600000)) {
-                    showError('join', 'Playing or Invalid');
-                    btn.innerText = "Search"; btn.disabled = false;
-                    return;
-                }
-                
-                document.getElementById('preview-id-text').innerText = rawId;
-                document.getElementById('preview-host-name').innerText = data.hostName || "Host";
-                document.getElementById('preview-digits').innerText = data.config.digits;
-                document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
-                document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
-                document.getElementById('join-preview').classList.remove('hidden');
-                btn.classList.add('hidden');
-            } catch (err) { showError('join', 'Error searching'); }
-            
-            btn.innerText = "Search"; btn.disabled = false;
-        };
-
-        window.confirmJoin = async () => {
-            const rawId = document.getElementById('join-room-id').value.trim().toUpperCase();
-            myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rawId);
-            try {
-                await updateDoc(roomRef, { guestId: user.uid, guestName: myUserName, state: 'setup', updatedAt: Date.now() });
-                currentRoomId = rawId; myPlayerNum = 2; 
-                config.mode = 'online';
-                enterOnlineSetup();
-            } catch (err) {}
-        };
 
         function enterOnlineSetup() {
             hideAll();
             document.getElementById('setup-screen').classList.remove('hidden-state');
             document.getElementById('setup-options').classList.add('hidden-state'); 
-            listenToRoom();
-        }
-
-        function listenToRoom() {
-            if (!currentRoomId || !db) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            roomUnsubscribe = onSnapshot(roomRef, async (snap) => {
-                if (!snap.exists()) { 
-                    if (myPlayerNum === 2 && !document.getElementById('setup-screen').classList.contains('hidden-state')) {
-                        alert("Room disbanded by host.");
-                        window.showOnlineLobby(); 
-                    }
-                    return; 
-                }
-                const data = snap.data(); config = data.config;
-                if (data.state === 'setup') {
-                    document.getElementById('setup-waiting-msg').classList.add('hidden-state');
-                    
-                    // Host checks if both ready and starts game to prevent race conditions
-                    if (myPlayerNum === 1 && data.p1Ready && data.p2Ready) {
-                        await updateDoc(roomRef, { state: 'playing', currentPlayer: Math.random() > 0.5 ? 1 : 2, updatedAt: Date.now() });
-                    }
-                }
-                if (data.state === 'waiting') document.getElementById('setup-waiting-msg').classList.remove('hidden-state');
-                
-                if (data.state === 'playing') {
-                    if(document.getElementById('game-screen').classList.contains('hidden-state')) {
-                        startGameOnline(data);
-                    }
-                    if (data.lastAction && data.lastAction.playerNum !== myPlayerNum) {
-                        if (data.lastAction.turn === turn && data.lastAction.playerNum === currentPlayer) {
-                            handleRemoteAction(data.lastAction);
-                        }
-                    }
-                }
-            });
         }
 
         window.setMode = (m) => {
@@ -818,7 +810,7 @@
             window.resetSetupUI();
         };
 
-        window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
+        window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
 
@@ -868,14 +860,18 @@
             btn.disabled = !isFull; btn.style.opacity = isFull ? "1" : "0.5"; 
         }
 
-        window.handleStartOrNext = async () => {
+        window.handleStartOrNext = () => {
             if (config.mode === 'online') {
                 sfx.launch(); 
                 document.getElementById('start-btn').classList.add('hidden'); 
                 document.getElementById('online-waiting-info').classList.remove('hidden');
                 
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                await updateDoc(roomRef, myPlayerNum === 1 ? { p1Ready: true, p1Secret: setupState.p1Secret, updatedAt: Date.now() } : { p2Ready: true, p2Secret: setupState.p1Secret, updatedAt: Date.now() });
+                if(myPlayerNum === 1) hostReady = true; else guestReady = true;
+                
+                if(conn && conn.open) {
+                    conn.send({ type: 'ready', secret: setupState.p1Secret });
+                }
+                checkOnlineStart();
 
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
@@ -884,12 +880,15 @@
             }
         };
 
-        function startGameOnline(roomData) {
-            config = roomData.config; p1Secret = roomData.p1Secret; p2Secret = roomData.p2Secret;
-            currentPlayer = roomData.currentPlayer; turn = roomData.turn;
-            document.getElementById('p2-name-label').innerText = (myPlayerNum === 1 ? roomData.guestName : roomData.hostName) || "Partner";
+        function startGameOnline() {
             document.getElementById('p1-panel-label').innerText = myUserName;
+            document.getElementById('p2-name-label').innerText = partnerName;
             
+            // ゲストはホストの設定に従う
+            if(myPlayerNum === 1) {
+                config.showP1Stats = document.getElementById('onlineStatsToggle').checked;
+                config.showP2Stats = config.showP1Stats;
+            }
             startGameUI();
         }
 
@@ -910,10 +909,11 @@
         function startGameUI() {
             sfx.launch(); allPerms = genPerms(config.digits); p1Knowledge = [...allPerms]; p2Knowledge = [...allPerms];
             
-            const showStats = config.mode === 'online' ? config.showP1Stats : true;
-            document.getElementById('playerStatBox').style.display = showStats ? 'block' : 'none'; 
-            document.getElementById('cpuStatBox').style.display = (config.mode === '1p' || config.mode === 'online') && showStats ? 'block' : 'none';
-            if (config.mode === '2p') document.getElementById('cpuStatBox').style.display = config.showP2Stats ? 'block' : 'none';
+            const showP1 = config.mode === 'online' ? config.showP1Stats : config.showP1Stats;
+            const showP2 = config.mode === 'online' ? config.showP1Stats : config.showP2Stats;
+            
+            document.getElementById('playerStatBox').style.display = showP1 ? 'block' : 'none'; 
+            document.getElementById('cpuStatBox').style.display = showP2 ? 'block' : 'none';
             
             const secretDisplay = document.getElementById('secret-code-display');
             if (config.mode === '1p') { 
@@ -978,56 +978,64 @@
             const res = checkResult(currentGuess, targetS);
             const guessCopy = [...currentGuess];
             
-            if(config.mode === 'online') {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                await updateDoc(roomRef, { 
-                    lastAction: { playerNum: myPlayerNum, guess: guessCopy, res: res, turn: turn }, 
-                    currentPlayer: myPlayerNum === 1 ? 2 : 1, 
-                    updatedAt: Date.now() 
-                });
+            if(config.mode === 'online' && conn && conn.open) {
+                conn.send({ type: 'action', guess: guessCopy, res: res });
             }
             
-            await processLocalAction(currentPlayer, guessCopy, res);
+            // Local Processing
+            if (currentPlayer === 1 || (config.mode === 'online' && myPlayerNum === 1)) {
+                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(guessCopy.join(''), res, currentPlayer); 
+                addLog('player', guessCopy, res);
+            } else {
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(guessCopy.join(''), res, currentPlayer); 
+                addLog('cpu', guessCopy, res);
+            }
+            
+            if (res.hits === config.digits) p1WonThisTurn = true;
+            
+            if (res.hits === config.digits) {
+                if(config.mode === 'online') endGame("YOU WIN", "Code Solved!");
+                else endGame(currentPlayer === 1 ? "1P WIN" : "2P WIN", "Code Solved!");
+                return;
+            }
+
+            if (config.mode === '1p') { 
+                const cpuWon = await cpuTurn(); 
+                if (cpuWon) endGame("ENEMY WIN", "CPU Solved it!");
+                else { turn++; isProcessing = false; initTurn(); }
+            } else { 
+                currentPlayer = currentPlayer === 1 ? 2 : 1; 
+                isProcessing = false; 
+                initTurn(); 
+            }
         };
 
-        async function processLocalAction(player, guess, res) {
-            if (player === 1 || (config.mode === 'online' && myPlayerNum === 1)) {
-                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guess.join(''), res, 1); 
-                addLog('player', guess, res);
-                
-                if (res.hits === config.digits) {
-                    endGame(config.mode==='online'?"YOU WIN":"1P WIN", "Code Solved!");
-                } else {
-                    if (config.mode === '1p') { 
-                        const cpuWon = await cpuTurn(); 
-                        if(cpuWon) endGame("ENEMY WIN", "CPU Solved it!");
-                        else { turn++; initTurn(); }
-                    } else { 
-                        currentPlayer = 2; 
-                        isProcessing = false; 
-                        initTurn(); 
-                    }
-                }
-            } else {
-                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guess.join(''), res, 2); 
-                addLog('cpu', guess, res);
-                
-                if (res.hits === config.digits) {
-                    endGame(config.mode==='online'?"ENEMY WIN":"2P WIN", "Partner Solved it!");
-                } else {
-                    currentPlayer = 1;
-                    turn++;
-                    initTurn();
-                }
-            }
-        }
-
-        async function handleRemoteAction(actionData) {
+        window.handleRemoteAction = async (actionData) => {
             isProcessing = true; clearInterval(gameTimerInterval);
+            const res = actionData.res; 
             const remoteP = myPlayerNum === 1 ? 2 : 1;
-            await processLocalAction(remoteP, actionData.guess, actionData.res);
+            
+            if (remoteP === 2) {
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(actionData.guess.join(''), res, remoteP); 
+                addLog('cpu', actionData.guess, res);
+            } else {
+                p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(actionData.guess, p); return r.hits === res.hits && r.blows === res.blows; });
+                await showAnnounce(actionData.guess.join(''), res, remoteP); 
+                addLog('player', actionData.guess, res);
+            }
+            
+            if (res.hits === config.digits) {
+                endGame("ENEMY WIN", "Partner Solved it!");
+                return;
+            }
+
+            currentPlayer = myPlayerNum;
+            turn++;
+            isProcessing = false;
+            initTurn();
         }
 
         async function cpuTurn() {
@@ -1037,6 +1045,14 @@
             const res = checkResult(guess, p1Secret); 
             p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
             await showAnnounce(guess.join(''), res, 2); addLog('cpu', guess, res); return res.hits === config.digits;
+        }
+
+        function endGame(title, body) { 
+            clearInterval(gameTimerInterval); 
+            document.getElementById('result-title').innerText = title; 
+            document.getElementById('result-body').innerText = body; 
+            document.getElementById('overlay').classList.remove('hidden-state'); 
+            if (title.includes("WIN") || title.includes("YOU") || title.includes("1P")) sfx.win(); else sfx.loss(); 
         }
 
         async function showAnnounce(num, res, player) {
@@ -1080,7 +1096,6 @@
         window.randomizeGuess = () => { currentGuess = genRandArr(config.digits); activeIdx = 0; sfx.launch(); window.renderGameSlots(); window.renderGameKeypad(); }
         window.clearCurrentGuess = () => { currentGuess = Array(config.digits).fill(null); activeIdx = 0; sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
         window.backspaceGuess = () => { for (let i = config.digits - 1; i >= 0; i--) { if (currentGuess[i] !== null) { currentGuess[i] = null; activeIdx = i; break; } } sfx.delete(); window.renderGameSlots(); window.renderGameKeypad(); }
-        function endGame(title, body) { clearInterval(gameTimerInterval); document.getElementById('result-title').innerText = title; document.getElementById('result-body').innerText = body; document.getElementById('overlay').classList.remove('hidden-state'); if (title.includes("WIN") || title.includes("YOU") || title.includes("1P")) sfx.win(); else sfx.loss(); }
 
         // --- STAR BACKGROUND ---
         window.addEventListener('DOMContentLoaded', () => {
@@ -1102,7 +1117,6 @@
             resize();
             anim();
             
-            // Init Icons
             updateMuteIcon('bgm', false);
             updateMuteIcon('se', false);
         });

@@ -159,7 +159,6 @@
         
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                <!-- リセットオーディオをRESETに変更 -->
                 <button onclick="if(window.resetAudio) window.resetAudio()" class="text-[8px] bg-white/10 px-3 py-0.5 rounded border border-white/10 hover:bg-cyan-500 hover:text-black transition-colors font-bold mr-2 uppercase">RESET</button>
                 
                 <div class="flex items-center gap-1.5">
@@ -195,7 +194,6 @@
     <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
-            <!-- タイトルの位置を調整 (italicによる視覚的なズレを補正) -->
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full pl-[0.2em]">Hit&Blow</h1>
             
             <button onclick="if(window.showOfflineSetup) window.showOfflineSetup()" class="menu-btn group mx-auto">
@@ -548,6 +546,9 @@
         function disbandRoom() {
             if (peer) { peer.destroy(); peer = null; }
             conn = null; hostReady = false; guestReady = false;
+            // 解散時にコード設定も空にする
+            setupState.p1Secret = Array(config.digits).fill(null);
+            setupState.p2Secret = Array(config.digits).fill(null);
         }
 
         window.createRoom = () => {
@@ -662,10 +663,7 @@
                 if (document.getElementById('start-btn').classList.contains('hidden')) {
                     if(conn && conn.open) conn.send({ type: 'cancel-ready' });
                     if(myPlayerNum === 1) hostReady = false; else guestReady = false;
-                    document.getElementById('start-btn').classList.remove('hidden');
-                    document.getElementById('online-waiting-info').classList.add('hidden');
-                    setupState.p1Secret = Array(config.digits).fill(null); activeIdx = 0;
-                    window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
+                    window.resetSetupUI();
                 } else { disbandRoom(); window.showOnlineLobby(); }
             } else if (config.mode === '2p' && setupState.phase === 'p2') {
                 setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null);
@@ -681,12 +679,24 @@
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
             isProcessing = false;
-            if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
-            else { window.showOfflineSetup(); window.resetSetupUI(); }
+            if (config.mode === 'online') { 
+                disbandRoom(); 
+                window.showOnlineLobby(); 
+            } else { 
+                window.showOfflineSetup(); 
+                window.resetSetupUI(); 
+            }
         };
 
         window.updateOnlineTimeDisplay = (val) => { config.timeLimit = parseInt(val); document.getElementById('onlineTimeDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-        function enterOnlineSetup() { hideAll(); document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.add('hidden-state'); }
+        
+        function enterOnlineSetup() { 
+            hideAll(); 
+            document.getElementById('setup-screen').classList.remove('hidden-state'); 
+            document.getElementById('setup-options').classList.add('hidden-state'); 
+            window.resetSetupUI(); // オンライン開始時にUIを初期化
+        }
+
         window.setMode = (m) => {
             config.mode = m;
             document.getElementById('btn-m1p').className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${m==='1p'?'bg-cyan-600':'bg-white/5'}`;
@@ -700,7 +710,22 @@
         window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
-        window.resetSetupUI = () => { setupState.phase = 'p1'; setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); };
+        
+        window.resetSetupUI = () => { 
+            setupState.phase = 'p1'; 
+            setupState.p1Secret = Array(config.digits).fill(null); 
+            setupState.p2Secret = Array(config.digits).fill(null); 
+            activeIdx = 0; 
+            
+            // UI部品の初期化
+            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('online-waiting-info').classList.add('hidden');
+            
+            window.renderSetupSlots(); 
+            window.renderSetupKeypad(); 
+            window.updateSetupUI(); 
+        };
+
         window.updateSetupUI = () => { const btn = document.getElementById('start-btn'); btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START"); window.checkReady(); }
         window.renderSetupSlots = () => {
             const container = document.getElementById('setup-slots'); container.innerHTML = '';
@@ -799,7 +824,6 @@
                 const btn = document.createElement('button'); 
                 btn.className = "py-2.5 bg-white/5 border border-white/10 rounded-lg text-base hover:bg-white/10 active:scale-95 transition-all disabled:opacity-10 font-bold";
                 btn.innerText = i; 
-                // スロットが空いているか、現在のスロットの数字を変更する場合のみ有効
                 const isAlreadyUsed = currentGuess.includes(i);
                 const isCurrentValue = currentGuess[activeIdx] === i;
                 btn.disabled = (isAlreadyUsed && !isCurrentValue) || isProcessing;

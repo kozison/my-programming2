@@ -134,6 +134,7 @@
 
     <canvas class="stars" id="starCanvas"></canvas>
 
+    <!-- LOADING -->
     <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
@@ -141,12 +142,14 @@
         </div>
     </div>
 
+    <!-- ANNOUNCE -->
     <div id="big-announce">
         <div id="big-number" class="text-5xl font-mono tracking-widest mb-1 text-white">----</div>
         <div id="big-result" class="text-2xl font-bold">0H 0B</div>
         <div id="big-player" class="text-[10px] tracking-widest opacity-80 mt-1 uppercase">PLAYER 1</div>
     </div>
 
+    <!-- HEADER -->
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
@@ -187,6 +190,7 @@
         </div>
     </header>
 
+    <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full text-center">Hit&Blow</h1>
@@ -213,6 +217,7 @@
         </div>
     </div>
 
+    <!-- ONLINE LOBBY -->
     <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-6 max-w-xl w-full space-y-5 mx-auto">
             <div class="flex justify-between items-center">
@@ -226,6 +231,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Create Room -->
                 <div class="space-y-3 border-r border-white/10 pr-0 md:pr-4">
                     <h2 class="text-sm font-bold text-cyan-400 uppercase italic">Create Room</h2>
                     <div>
@@ -250,6 +256,7 @@
                     <button onclick="if(window.createRoom) window.createRoom()" id="create-btn" class="w-full py-2 bg-cyan-500 text-black font-bold rounded uppercase text-[11px]">Create Room</button>
                 </div>
 
+                <!-- Join Room -->
                 <div class="space-y-3">
                     <h2 class="text-sm font-bold text-pink-500 uppercase italic">Join Room</h2>
                     <div>
@@ -272,6 +279,7 @@
         </div>
     </div>
 
+    <!-- SETUP SCREEN -->
     <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative mx-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
@@ -340,6 +348,7 @@
         </div>
     </div>
 
+    <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
             <div class="glass-panel p-2 flex flex-col w-1/4">
@@ -394,6 +403,7 @@
         </div>
     </div>
 
+    <!-- RESULT OVERLAY -->
     <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state backdrop-blur-md">
         <div class="text-center p-8 glass-panel border-cyan-500 border-2 shadow-2xl max-w-sm w-full font-bold">
             <h2 id="result-title" class="text-5xl font-bold mb-3 tracking-tighter uppercase italic text-cyan-400">Result</h2>
@@ -522,8 +532,8 @@
             p1Secret = []; p2Secret = [];
             setupState.phase = 'p1';
             setupState.p1Secret = Array(config.digits).fill(null);
-            document.getElementById('search-btn').innerText = "Search";
-            document.getElementById('search-btn').disabled = false;
+            const sBtn = document.getElementById('search-btn');
+            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
         }
 
         window.createRoom = () => {
@@ -569,7 +579,7 @@
                 setTimeout(() => { 
                     if(!conn || !conn.open) { 
                         showError('join', 'Not Found'); 
-                        btn.innerText = "Search"; btn.disabled = false; 
+                        btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden');
                     } 
                 }, 3000);
             });
@@ -599,7 +609,7 @@
 
         function checkOnlineStart() {
             if (myPlayerNum === 1 && hostReady && guestReady) {
-                currentPlayer = 1; // Host starts
+                currentPlayer = 1; 
                 conn.send({ type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer });
                 startGameOnline();
             }
@@ -619,7 +629,15 @@
 
         window.showMainMenu = () => { if (config.mode === 'online') disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
+        window.showOnlineLobby = () => { 
+            hideAll(); 
+            const lobby = document.getElementById('online-lobby');
+            lobby.classList.remove('hidden-state');
+            document.getElementById('join-preview').classList.add('hidden'); 
+            const sBtn = document.getElementById('search-btn');
+            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
+            disbandRoom(); 
+        };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -659,12 +677,13 @@
 
         window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
         window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
-        window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById(`btn-l${v}`).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
+        window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById('btn-l' + v).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden');
+            activeIdx = 0; 
+            document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
@@ -673,12 +692,9 @@
             const btn = document.getElementById('start-btn'); 
             btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START");
             const label = document.getElementById('setup-label');
-            if (config.mode === '2p') {
-                label.innerText = setupState.phase === 'p1' ? "1P CODE" : "2P CODE";
-                label.style.color = setupState.phase === 'p1' ? "var(--neon-blue)" : "var(--neon-pink)";
-            } else {
-                label.innerText = "SECRET CODE"; label.style.color = "inherit";
-            }
+            // ラベル表示を1P戦でも「1P CODE」に統一
+            label.innerText = setupState.phase === 'p1' ? "1P CODE" : "2P CODE";
+            label.style.color = setupState.phase === 'p1' ? "var(--neon-blue)" : "var(--neon-pink)";
             window.checkReady(); 
         }
 
@@ -749,8 +765,8 @@
             document.getElementById('cpuStatBox').style.display = config.showP2Stats ? 'block' : 'none';
             const mySecretArea = document.getElementById('displayMySecretBig');
             if (config.mode === '2p') mySecretArea.innerText = "?".repeat(config.digits);
-            else mySecretArea.innerText = (myPlayerNum === 2 ? p2Secret : p1Secret).join('');
-            currentGuess = Array(config.digits).fill(null); activeIdx = 0;
+            else mySecretArea.innerText = (config.mode === 'online' ? (myPlayerNum === 1 ? p1Secret : p2Secret) : p1Secret).join('');
+            currentGuess = Array(config.digits).fill(null); activeIdx = 0; 
             hideAll(); document.getElementById('game-screen').classList.remove('hidden-state'); 
             document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
             p1WonThisRound = false; isProcessing = false; initTurn();
@@ -777,7 +793,8 @@
             const container = document.getElementById('inputSlots'); container.innerHTML = '';
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
-                div.innerText = val !== null ? val : ''; div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
+                div.innerText = val !== null ? val : ''; 
+                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -804,9 +821,8 @@
             const guessCopy = [...currentGuess];
             if(config.mode === 'online' && conn && conn.open) conn.send({ type: 'action', guess: guessCopy, res: res });
             
-            // 自分の履歴は常に左パネル
-            const isP1 = (config.mode === 'online') ? (myPlayerNum === 1) : (currentPlayer === 1);
-            if (isP1) {
+            const actingPlayerNum = (config.mode === 'online') ? myPlayerNum : currentPlayer;
+            if (actingPlayerNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
                 await showAnnounce(guessCopy.join(''), res, 1); addLog('player', guessCopy, res);
             } else {
@@ -815,18 +831,12 @@
             }
             
             if (res.hits === config.digits) {
-                if (currentPlayer === 1) { 
-                    p1WonThisRound = true; // 1Pが当てたら、2Pのラストチャンスを待つ
-                } else if (p1WonThisRound) {
-                    return endGame("DRAW", "Both Solved it!");
-                } else {
-                    return endGame("ENEMY WIN", "2P Solved it!");
-                }
+                if (currentPlayer === 1) { p1WonThisRound = true; } 
+                else if (p1WonThisRound) { return endGame("DRAW", "Both Solved it!"); } 
+                else { return endGame("ENEMY WIN", "2P Solved it!"); }
             }
 
-            if (currentPlayer === 2 && p1WonThisRound) {
-                return endGame("YOU WIN", "1P Solved it!");
-            }
+            if (currentPlayer === 2 && p1WonThisRound) { return endGame("YOU WIN", "1P Solved it!"); }
 
             if (config.mode === '1p') { 
                 const cpuWon = await cpuTurn(); 
@@ -834,7 +844,7 @@
                 else if (p1WonThisRound) endGame("YOU WIN", "1P Solved it!");
                 else { turn++; isProcessing = false; initTurn(); }
             } else { 
-                currentPlayer = currentPlayer === 1 ? 2 : 1; 
+                currentPlayer = (currentPlayer === 1 ? 2 : 1); 
                 if (currentPlayer === 1) turn++;
                 isProcessing = false; initTurn(); 
             }
@@ -844,7 +854,6 @@
             isProcessing = true; clearInterval(gameTimerInterval);
             const res = data.res; const remoteP = (myPlayerNum === 1 ? 2 : 1);
             
-            // 相手のアクション。相手がP1なら左、P2なら右。
             if (remoteP === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
                 await showAnnounce(data.guess.join(''), res, 1); addLog('player', data.guess, res);
@@ -854,7 +863,7 @@
                 await showAnnounce(data.guess.join(''), res, 2); addLog('cpu', data.guess, res);
             }
 
-            if (currentPlayer === 2) { // ターンの終わり
+            if (currentPlayer === 2) {
                 if (p1WonThisRound && res.hits === config.digits) return endGame("DRAW", "Both Solved!");
                 if (p1WonThisRound) return endGame(myPlayerNum === 1 ? "YOU WIN" : "ENEMY WIN", "P1 Solved!");
                 if (res.hits === config.digits) return endGame(myPlayerNum === 2 ? "YOU WIN" : "ENEMY WIN", "P2 Solved!");

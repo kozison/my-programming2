@@ -272,7 +272,6 @@
         </div>
     </div>
 
-    <!-- SETUP SCREEN -->
     <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative mx-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
@@ -341,7 +340,6 @@
         </div>
     </div>
 
-    <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
             <div class="glass-panel p-2 flex flex-col w-1/4">
@@ -576,7 +574,9 @@
                         document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
                         document.getElementById('join-preview').classList.remove('hidden');
-                        btn.classList.add('hidden'); conn = tempConn; setupConnection(); 
+                        btn.classList.add('hidden'); 
+                        conn = tempConn;
+                        setupConnection(); 
                     }
                 });
                 setTimeout(() => { if(!conn || !conn.open) { showError('join', 'Not Found'); btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden'); } }, 3000);
@@ -586,23 +586,43 @@
         window.confirmJoin = () => {
             myUserName = document.getElementById('user-name-input').value.trim() || "Guest";
             myPlayerNum = 2; config.mode = 'online';
-            if (conn && conn.open) { conn.send({ type: 'guest-join', guestName: myUserName }); enterOnlineSetup(); }
+            if (conn && conn.open) {
+                conn.send({ type: 'guest-join', guestName: myUserName });
+                enterOnlineSetup();
+            }
         };
 
         function setupConnection() {
             conn.on('data', data => {
-                if(data.type === 'request-info') { conn.send({ type: 'room-info', config: config, hostName: myUserName }); }
-                else if(data.type === 'guest-join') { partnerName = data.guestName || "Guest"; document.getElementById('p2-name-label').innerText = partnerName; }
+                if(data.type === 'request-info') {
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
+                }
+                else if(data.type === 'guest-join') {
+                    partnerName = data.guestName || "Guest";
+                    document.getElementById('p2-name-label').innerText = partnerName;
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
+                }
                 else if(data.type === 'ready') {
-                    if (myPlayerNum === 1) { guestReady = true; p2Secret = data.secret; checkOnlineStart(); } 
-                    else { hostReady = true; p1Secret = data.secret; }
+                    if (myPlayerNum === 1) { // Host
+                        guestReady = true; p2Secret = data.secret; checkOnlineStart();
+                    } else { // Guest
+                        hostReady = true; p1Secret = data.secret;
+                    }
                 }
                 else if(data.type === 'start') {
-                    config = data.config; currentPlayer = data.startPlayer; startingPlayer = data.startPlayer; p1Secret = data.p1Secret; 
-                    partnerName = data.hostName; startGameOnline();
+                    config = data.config;
+                    currentPlayer = data.startPlayer;
+                    startingPlayer = data.startPlayer;
+                    p1Secret = data.p1Secret; // 相手のコード
+                    partnerName = data.hostName;
+                    startGameOnline();
                 }
-                else if(data.type === 'action') { window.handleRemoteAction(data); }
-                else if(data.type === 'disband') { alert("Partner left."); window.showOnlineLobby(); }
+                else if(data.type === 'action') {
+                    window.handleRemoteAction(data);
+                }
+                else if(data.type === 'disband') {
+                    alert("Partner left."); window.showOnlineLobby();
+                }
             });
             conn.on('close', () => { if(!document.getElementById('game-screen').classList.contains('hidden-state')) { window.showOnlineLobby(); } });
         }
@@ -612,7 +632,11 @@
                 startingPlayer = Math.random() < 0.5 ? 1 : 2;
                 currentPlayer = startingPlayer;
                 conn.send({ 
-                    type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer, p1Secret: p1Secret 
+                    type: 'start', 
+                    config: config, 
+                    hostName: myUserName, 
+                    startPlayer: currentPlayer,
+                    p1Secret: p1Secret 
                 });
                 startGameOnline();
             }
@@ -655,7 +679,8 @@
 
         window.handleSmartExit = () => {
             isGameActive = false; isProcessing = false; clearInterval(gameTimerInterval);
-            document.getElementById('game-screen').classList.add('hidden-state'); document.getElementById('overlay').classList.add('hidden-state');
+            document.getElementById('game-screen').classList.add('hidden-state');
+            document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
             if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
@@ -680,7 +705,9 @@
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden'); document.getElementById('online-waiting-info').classList.add('hidden');
+            activeIdx = 0; 
+            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
 
@@ -725,7 +752,9 @@
         
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
-                sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
+                sfx.launch(); 
+                document.getElementById('start-btn').classList.add('hidden'); 
+                document.getElementById('online-waiting-info').classList.remove('hidden');
                 if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
                 else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
                 if(conn && conn.open) { conn.send({ type: 'ready', secret: setupState.p1Secret }); }
@@ -779,14 +808,10 @@
             let isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
             let statusText = isMyTurn ? "YOUR TURN" : "ENEMY TURN";
             let colorClass = isMyTurn ? "text-[#00f2ff]" : "text-[#ff00e5]";
-            if (config.mode === '2p') {
-                statusText = (currentPlayer === 1 ? "1P TURN" : "2P TURN");
-                colorClass = (currentPlayer === 1 ? "text-[#00f2ff]" : "text-[#ff00e5]");
-                currentGuess = Array(config.digits).fill(null); activeIdx = 0; 
-            }
+            if (config.mode === '2p') statusText = (currentPlayer === 1 ? "1P TURN" : "2P TURN");
             const indicator = document.getElementById('turn-indicator-text');
             indicator.innerText = statusText; indicator.className = `text-2xl font-mono font-black tracking-widest mb-4 transition-colors ${colorClass}`;
-            document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisRound);
+            if (config.mode === '2p') { currentGuess = Array(config.digits).fill(null); activeIdx = 0; }
             window.renderGameSlots(); window.renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -795,7 +820,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
+                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -832,14 +857,14 @@
             
             if (res.hits === config.digits) {
                 if (currentPlayer === startingPlayer) {
-                    p1WonThisRound = true; // 先行が正解。後攻のターンへ。
+                    p1WonThisRound = true; // 先行が正解。後攻のチャンスへ。
                 } else {
                     if (p1WonThisRound) return endGame("DRAW");
-                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
+                    return endGame(config.mode === '2p' ? "2P WIN" : "YOU WIN");
                 }
             } else {
                 if (currentPlayer !== startingPlayer && p1WonThisRound) {
-                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
+                    return endGame(config.mode === '2p' ? "1P WIN" : "YOU WIN");
                 }
             }
 
@@ -874,6 +899,8 @@
                 if (p1WonThisRound && res.hits === config.digits) return endGame("DRAW");
                 if (p1WonThisRound) return endGame(startingPlayer === myPlayerNum ? "YOU WIN" : "YOU LOSE");
                 if (res.hits === config.digits) return endGame(startingPlayer === myPlayerNum ? "YOU LOSE" : "YOU WIN");
+            } else {
+                // 先行が正解して後攻がまだ外している状態なら続行（上のplayerAction側で判定される）
             }
             
             currentPlayer = (currentPlayer === 1 ? 2 : 1); 
@@ -906,7 +933,7 @@
                 announce.classList.add('show'); sfx.scan();
                 setTimeout(() => { 
                     announce.classList.remove('show'); 
-                    bigNum.style.color = "white"; // Reset for next announce
+                    bigNum.style.color = "white"; 
                     setTimeout(resolve, 300); 
                 }, 1500);
             });

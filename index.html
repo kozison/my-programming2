@@ -344,7 +344,7 @@
     <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
-            <!-- LEFT PANEL -->
+            <!-- LEFT PANEL (YOUR PANEL) -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
                 <h3 id="p1-panel-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">YOU</h3>
                 <div class="history-list" id="playerHistory"></div>
@@ -386,7 +386,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT PANEL -->
+            <!-- RIGHT PANEL (ENEMY PANEL) -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
                 <h3 id="p2-name-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">CPU</h3>
                 <div class="history-list" id="cpuHistory"></div>
@@ -536,12 +536,12 @@
             setupState.p1Secret = Array(config.digits).fill(null);
             setupState.p2Secret = Array(config.digits).fill(null);
             
-            // 履歴と統計を完全にリセット
+            // 全履歴と表示を物理的に消去
             document.getElementById('playerHistory').innerHTML = '';
             document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('playerRemaining').innerText = '---';
-            document.getElementById('playerProb').innerText = '0%';
             document.getElementById('cpuRemaining').innerText = '---';
+            document.getElementById('playerProb').innerText = '0%';
             document.getElementById('cpuProb').innerText = '0%';
 
             const sBtn = document.getElementById('search-btn');
@@ -614,6 +614,7 @@
                 else if(data.type === 'guest-join') {
                     partnerName = data.guestName || "Guest";
                     document.getElementById('p2-name-label').innerText = partnerName;
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
                 else if(data.type === 'ready') {
                     if (myPlayerNum === 1) { // Host
@@ -627,7 +628,7 @@
                     partnerName = data.hostName; startGameOnline();
                 }
                 else if(data.type === 'action') { window.handleRemoteAction(data); }
-                else if(data.type === 'disband') { alert("Partner left the room."); window.showOnlineLobby(); }
+                else if(data.type === 'disband') { alert("Partner left."); window.showOnlineLobby(); }
             });
             conn.on('close', () => { if(!document.getElementById('game-screen').classList.contains('hidden-state')) { window.showOnlineLobby(); } });
         }
@@ -660,7 +661,14 @@
 
         window.showMainMenu = () => { disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
+        window.showOnlineLobby = () => { 
+            hideAll(); 
+            document.getElementById('online-lobby').classList.remove('hidden-state');
+            document.getElementById('join-preview').classList.add('hidden'); 
+            const sBtn = document.getElementById('search-btn');
+            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
+            disbandRoom(); 
+        };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -702,7 +710,8 @@
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden');
+            activeIdx = 0; 
+            document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
@@ -749,8 +758,9 @@
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
                 sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
-                if(myPlayerNum === 1) p1Secret = [...setupState.p1Secret]; else p2Secret = [...setupState.p1Secret];
-                if(conn && conn.open) conn.send({ type: 'ready', secret: setupState.p1Secret });
+                if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
+                else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
+                if(conn && conn.open) { conn.send({ type: 'ready', secret: setupState.p1Secret }); }
                 checkOnlineStart();
             } else if (config.mode === '2p' && setupState.phase === 'p1') {
                 sfx.launch(); setupState.phase = 'p2'; activeIdx = 0; window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI();
@@ -801,7 +811,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
+                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -829,10 +839,7 @@
             
             await showAnnounce(guessCopy.join(''), res, myPlayerNum || currentPlayer); if (!isGameActive) return;
 
-            // 自分の履歴は常に左側
             addLog('player', guessCopy, res);
-            
-            // 自分の推論を更新
             if (config.mode === 'online') {
                 if(myPlayerNum === 1) p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
                 else p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
@@ -853,8 +860,7 @@
             if (currentPlayer === 2 && p1WonThisRound) return endGame(config.mode === '2p' ? "1P WIN" : "YOU WIN");
 
             if (config.mode === '1p') { 
-                const cpuWon = await cpuTurn(); 
-                if (cpuWon) endGame(p1WonThisRound ? "DRAW" : "YOU LOSE");
+                const cpuWon = await cpuTurn(); if (cpuWon) endGame(p1WonThisRound ? "DRAW" : "YOU LOSE");
                 else if (p1WonThisRound) endGame("YOU WIN"); else { turn++; initTurn(); }
             } else { currentPlayer = (currentPlayer === 1 ? 2 : 1); if (currentPlayer === 1) turn++; initTurn(); }
         };
@@ -865,10 +871,7 @@
             const res = data.res; const remotePNum = (myPlayerNum === 1 ? 2 : 1);
             await showAnnounce(data.guess.join(''), res, remotePNum); if (!isGameActive) return;
 
-            // 相手の履歴は常に右側
             addLog('cpu', data.guess, res);
-            
-            // 相手の推論を更新
             if (remotePNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
                 if (res.hits === config.digits) p1WonThisRound = true;
@@ -915,7 +918,6 @@
         }
 
         function updateStatsUI() {
-            // 左側: 自分が相手を当てる確率 / 右側: 相手が自分を当てる確率
             const myScan = (myPlayerNum === 2) ? p2Knowledge : p1Knowledge;
             const enemyScan = (myPlayerNum === 2) ? p1Knowledge : p2Knowledge;
             const mLen = myScan.length || 1, eLen = enemyScan.length || 1;

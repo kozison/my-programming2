@@ -132,6 +132,7 @@
 
     <canvas class="stars" id="starCanvas"></canvas>
 
+    <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="hidden-state fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3 mx-auto"></div>
@@ -139,12 +140,14 @@
         </div>
     </div>
 
+    <!-- ANNOUNCE -->
     <div id="big-announce">
         <div id="big-number" class="text-5xl font-mono tracking-widest mb-1 text-white">----</div>
         <div id="big-result" class="text-2xl font-bold">0H 0B</div>
         <div id="big-player" class="text-[10px] tracking-widest opacity-80 mt-1 uppercase">PLAYER</div>
     </div>
 
+    <!-- HEADER -->
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
@@ -187,6 +190,7 @@
         </div>
     </header>
 
+    <!-- MAIN MENU -->
     <div id="main-menu" class="flex-1 flex items-center justify-center p-4">
         <div class="max-w-[300px] w-full space-y-6 mx-auto">
             <h1 class="text-6xl font-bold tracking-tight text-center mb-8 uppercase text-cyan-400 italic block w-full text-center">Hit&Blow</h1>
@@ -213,6 +217,7 @@
         </div>
     </div>
 
+    <!-- ONLINE LOBBY -->
     <div id="online-lobby" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-6 max-w-xl w-full space-y-5 mx-auto">
             <div class="flex justify-between items-center">
@@ -226,6 +231,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Create Room -->
                 <div class="space-y-3 border-r border-white/10 pr-0 md:pr-4">
                     <h2 class="text-sm font-bold text-cyan-400 uppercase italic">Create Room</h2>
                     <div>
@@ -272,6 +278,7 @@
         </div>
     </div>
 
+    <!-- SETUP SCREEN -->
     <div id="setup-screen" class="flex-1 flex items-center justify-center hidden-state p-4 compact-view">
         <div class="glass-panel p-5 max-w-xl w-full border border-cyan-500/30 shadow-2xl relative mx-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
@@ -340,8 +347,10 @@
         </div>
     </div>
 
+    <!-- GAME SCREEN -->
     <div id="game-screen" class="flex-1 flex flex-col p-2 overflow-hidden hidden-state">
         <div class="flex gap-2 flex-1 overflow-hidden">
+            <!-- LEFT PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
                 <h3 id="p1-panel-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">YOU</h3>
                 <div class="history-list" id="playerHistory"></div>
@@ -352,6 +361,7 @@
                 </div>
             </div>
 
+            <!-- CENTER CONTROLS -->
             <div class="flex flex-col w-2/4 gap-2">
                 <div class="glass-panel p-3 flex-1 flex flex-col justify-center relative">
                     <button onclick="if(window.handleSmartExit) window.handleSmartExit()" class="absolute top-2 right-3 text-[9px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold">Back</button>
@@ -382,6 +392,7 @@
                 </div>
             </div>
 
+            <!-- RIGHT PANEL -->
             <div class="glass-panel p-2 flex flex-col w-1/4">
                 <h3 id="p2-name-label" class="text-center text-[10px] font-bold opacity-60 mb-2 border-b border-white/10 pb-1 uppercase tracking-widest">CPU</h3>
                 <div class="history-list" id="cpuHistory"></div>
@@ -551,9 +562,7 @@
                 showError('create', err.type === 'unavailable-id' ? 'Already Used' : 'Connection Error');
                 btn.innerText = "Create Room"; btn.disabled = false;
             });
-            peer.on('connection', (connection) => { 
-                conn = connection; setupConnection(); 
-            });
+            peer.on('connection', (connection) => { conn = connection; setupConnection(); });
         };
 
         window.searchRoom = () => {
@@ -575,8 +584,7 @@
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
                         document.getElementById('join-preview').classList.remove('hidden');
                         btn.classList.add('hidden'); 
-                        conn = tempConn;
-                        setupConnection(); 
+                        conn = tempConn; setupConnection(); 
                     }
                 });
                 setTimeout(() => { if(!conn || !conn.open) { showError('join', 'Not Found'); btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden'); } }, 3000);
@@ -594,35 +602,22 @@
 
         function setupConnection() {
             conn.on('data', data => {
-                if(data.type === 'request-info') {
-                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
-                }
+                if(data.type === 'request-info') { conn.send({ type: 'room-info', config: config, hostName: myUserName }); }
                 else if(data.type === 'guest-join') {
                     partnerName = data.guestName || "Guest";
                     document.getElementById('p2-name-label').innerText = partnerName;
                     conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
                 else if(data.type === 'ready') {
-                    if (myPlayerNum === 1) { // Host
-                        guestReady = true; p2Secret = data.secret; checkOnlineStart();
-                    } else { // Guest
-                        hostReady = true; p1Secret = data.secret;
-                    }
+                    if (myPlayerNum === 1) { guestReady = true; p2Secret = data.secret; checkOnlineStart(); } 
+                    else { hostReady = true; p1Secret = data.secret; }
                 }
                 else if(data.type === 'start') {
-                    config = data.config;
-                    currentPlayer = data.startPlayer;
-                    startingPlayer = data.startPlayer;
-                    p1Secret = data.p1Secret; // 相手のコード
-                    partnerName = data.hostName;
-                    startGameOnline();
+                    config = data.config; startingPlayer = data.startPlayer; currentPlayer = data.startPlayer; p1Secret = data.p1Secret; 
+                    partnerName = data.hostName; startGameOnline();
                 }
-                else if(data.type === 'action') {
-                    window.handleRemoteAction(data);
-                }
-                else if(data.type === 'disband') {
-                    alert("Partner left."); window.showOnlineLobby();
-                }
+                else if(data.type === 'action') { window.handleRemoteAction(data); }
+                else if(data.type === 'disband') { alert("Partner left."); window.showOnlineLobby(); }
             });
             conn.on('close', () => { if(!document.getElementById('game-screen').classList.contains('hidden-state')) { window.showOnlineLobby(); } });
         }
@@ -632,11 +627,7 @@
                 startingPlayer = Math.random() < 0.5 ? 1 : 2;
                 currentPlayer = startingPlayer;
                 conn.send({ 
-                    type: 'start', 
-                    config: config, 
-                    hostName: myUserName, 
-                    startPlayer: currentPlayer,
-                    p1Secret: p1Secret 
+                    type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer, p1Secret: p1Secret 
                 });
                 startGameOnline();
             }
@@ -656,14 +647,7 @@
 
         window.showMainMenu = () => { disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { 
-            hideAll(); 
-            document.getElementById('online-lobby').classList.remove('hidden-state');
-            document.getElementById('join-preview').classList.add('hidden'); 
-            const sBtn = document.getElementById('search-btn');
-            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
-            disbandRoom(); 
-        };
+        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -679,8 +663,7 @@
 
         window.handleSmartExit = () => {
             isGameActive = false; isProcessing = false; clearInterval(gameTimerInterval);
-            document.getElementById('game-screen').classList.add('hidden-state');
-            document.getElementById('overlay').classList.add('hidden-state');
+            document.getElementById('game-screen').classList.add('hidden-state'); document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
             if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
@@ -705,9 +688,7 @@
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; 
-            document.getElementById('start-btn').classList.remove('hidden');
-            document.getElementById('online-waiting-info').classList.add('hidden');
+            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden'); document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
 
@@ -752,9 +733,7 @@
         
         window.handleStartOrNext = () => {
             if (config.mode === 'online') {
-                sfx.launch(); 
-                document.getElementById('start-btn').classList.add('hidden'); 
-                document.getElementById('online-waiting-info').classList.remove('hidden');
+                sfx.launch(); document.getElementById('start-btn').classList.add('hidden'); document.getElementById('online-waiting-info').classList.remove('hidden');
                 if(myPlayerNum === 1) { hostReady = true; p1Secret = [...setupState.p1Secret]; } 
                 else { guestReady = true; p2Secret = [...setupState.p1Secret]; }
                 if(conn && conn.open) { conn.send({ type: 'ready', secret: setupState.p1Secret }); }
@@ -808,10 +787,14 @@
             let isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
             let statusText = isMyTurn ? "YOUR TURN" : "ENEMY TURN";
             let colorClass = isMyTurn ? "text-[#00f2ff]" : "text-[#ff00e5]";
-            if (config.mode === '2p') statusText = (currentPlayer === 1 ? "1P TURN" : "2P TURN");
+            if (config.mode === '2p') {
+                statusText = (currentPlayer === 1 ? "1P TURN" : "2P TURN");
+                colorClass = (currentPlayer === 1 ? "text-[#00f2ff]" : "text-[#ff00e5]");
+                currentGuess = Array(config.digits).fill(null); activeIdx = 0; 
+            }
             const indicator = document.getElementById('turn-indicator-text');
             indicator.innerText = statusText; indicator.className = `text-2xl font-mono font-black tracking-widest mb-4 transition-colors ${colorClass}`;
-            if (config.mode === '2p') { currentGuess = Array(config.digits).fill(null); activeIdx = 0; }
+            document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisRound);
             window.renderGameSlots(); window.renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -857,14 +840,14 @@
             
             if (res.hits === config.digits) {
                 if (currentPlayer === startingPlayer) {
-                    p1WonThisRound = true; // 先行が正解。後攻のチャンスへ。
+                    p1WonThisRound = true; // 先手正解：後手のチャンス待ち
                 } else {
                     if (p1WonThisRound) return endGame("DRAW");
-                    return endGame(config.mode === '2p' ? "2P WIN" : "YOU WIN");
+                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
                 }
             } else {
                 if (currentPlayer !== startingPlayer && p1WonThisRound) {
-                    return endGame(config.mode === '2p' ? "1P WIN" : "YOU WIN");
+                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
                 }
             }
 
@@ -892,15 +875,14 @@
             if (remotePNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
                 if (res.hits === config.digits) p1WonThisRound = true;
-            } else { p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; }); }
+            } else { 
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; }); 
+            }
 
-            // ターン終了（後攻が回答した）後のチェック
             if (currentPlayer !== startingPlayer) {
                 if (p1WonThisRound && res.hits === config.digits) return endGame("DRAW");
                 if (p1WonThisRound) return endGame(startingPlayer === myPlayerNum ? "YOU WIN" : "YOU LOSE");
                 if (res.hits === config.digits) return endGame(startingPlayer === myPlayerNum ? "YOU LOSE" : "YOU WIN");
-            } else {
-                // 先行が正解して後攻がまだ外している状態なら続行（上のplayerAction側で判定される）
             }
             
             currentPlayer = (currentPlayer === 1 ? 2 : 1); 

@@ -396,6 +396,7 @@
         </div>
     </div>
 
+    <!-- RESULT OVERLAY -->
     <div id="overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] hidden-state backdrop-blur-md">
         <div class="text-center p-8 glass-panel border-cyan-500 border-2 shadow-2xl max-w-sm w-full font-bold">
             <h2 id="result-title" class="text-5xl font-bold mb-3 tracking-tighter uppercase italic text-cyan-400">Result</h2>
@@ -570,7 +571,8 @@
                 tempConn.on('data', data => {
                     if(data.type === 'room-info') {
                         config.digits = data.config.digits; 
-                        document.getElementById('preview-host-name').innerText = data.hostName || "Host";
+                        partnerName = data.hostName || "Host"; // Previewで名前確保
+                        document.getElementById('preview-host-name').innerText = partnerName;
                         document.getElementById('preview-digits').innerText = data.config.digits;
                         document.getElementById('preview-time').innerText = data.config.timeLimit === 0 ? "♾️" : data.config.timeLimit + "s";
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
@@ -600,12 +602,12 @@
                 else if(data.type === 'guest-join') {
                     partnerName = data.guestName || "Guest";
                     document.getElementById('p2-name-label').innerText = partnerName;
-                    conn.send({ type: 'room-info', config: config, hostName: myUserName });
+                    conn.send({ type: 'room-info', config: config, hostName: myUserName }); // Host sends back name
                 }
                 else if(data.type === 'ready') {
-                    if (myPlayerNum === 1) { // Host
+                    if (myPlayerNum === 1) { // Host receives guest ready
                         guestReady = true; p2Secret = data.secret; checkOnlineStart();
-                    } else { // Guest
+                    } else { // Guest receives host ready
                         hostReady = true; p1Secret = data.secret;
                     }
                 }
@@ -637,7 +639,7 @@
         let setupState = { phase: 'p1', p1Secret: [], p2Secret: [] };
         let p1Secret = [], p2Secret = [], p1History = [], p2History = [];
         let currentGuess = [], activeIdx = 0, turn = 1, currentPlayer = 1;
-        let p1WonThisRound = false, isProcessing = false, gameTimerInterval = null, currentTime = 0;
+        let firstPlayerWon = false, isProcessing = false, gameTimerInterval = null, currentTime = 0;
         let allPerms = [], p1Knowledge = [], p2Knowledge = [];
 
         function hideAll() { document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen, #overlay').forEach(el => el.classList.add('hidden-state')); }
@@ -782,7 +784,7 @@
             currentGuess = Array(config.digits).fill(null); activeIdx = 0;
             hideAll(); document.getElementById('game-screen').classList.remove('hidden-state'); 
             document.getElementById('exitBtn').classList.remove('hidden'); document.getElementById('turn-display').classList.remove('hidden-state');
-            p1WonThisRound = false; isProcessing = false; initTurn();
+            firstPlayerWon = false; isProcessing = false; initTurn();
         }
 
         function initTurn() {
@@ -798,7 +800,7 @@
             }
             const indicator = document.getElementById('turn-indicator-text');
             indicator.innerText = statusText; indicator.className = `text-2xl font-mono font-black tracking-widest mb-4 transition-colors ${colorClass}`;
-            document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisRound);
+            document.getElementById('p1-victory-flag').classList.toggle('hidden', !firstPlayerWon);
             window.renderGameSlots(); window.renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -807,7 +809,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
+                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -835,7 +837,10 @@
             
             await showAnnounce(guessCopy.join(''), res, myPlayerNum || currentPlayer); if (!isGameActive) return;
 
-            addLog('player', guessCopy, res);
+            // 自分の履歴は常に左側
+            if (config.mode === 'online') addLog('player', guessCopy, res);
+            else addLog(currentPlayer === 1 ? 'player' : 'cpu', guessCopy, res);
+
             // 自分の推論を更新
             if (config.mode === 'online') {
                 if(myPlayerNum === 1) p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
@@ -843,25 +848,27 @@
             } else if (currentPlayer === 1) p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
             else p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
             
+            const isFirstPlayerTurn = (currentPlayer === startingPlayer);
+
             if (res.hits === config.digits) {
-                if (currentPlayer === startingPlayer) {
-                    p1WonThisRound = true; // 先手正解：後手のチャンスへ
+                if (isFirstPlayerTurn) {
+                    firstPlayerWon = true; // 先行が正解。後行のチャンスへ。
                 } else {
-                    if (p1WonThisRound) return endGame("DRAW");
-                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
+                    if (firstPlayerWon) return endGame("DRAW"); // 両者正解
+                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN"); // 後行のみ正解
                 }
             } else {
-                if (currentPlayer !== startingPlayer && p1WonThisRound) {
-                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
+                if (!isFirstPlayerTurn && firstPlayerWon) {
+                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU LOSE");
                 }
             }
 
             if (config.mode === '1p') { 
                 const cpuWon = await cpuTurn(); 
                 if (cpuWon) {
-                    if (p1WonThisRound) return endGame("DRAW");
+                    if (firstPlayerWon) return endGame("DRAW");
                     return endGame("YOU LOSE");
-                } else if (p1WonThisRound) return endGame("YOU WIN"); 
+                } else if (firstPlayerWon) return endGame("YOU WIN"); 
                 else { turn++; initTurn(); }
             } else { 
                 currentPlayer = (currentPlayer === 1 ? 2 : 1); 
@@ -879,14 +886,23 @@
             addLog('cpu', data.guess, res);
             if (remotePNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                if (res.hits === config.digits) p1WonThisRound = true;
-            } else { p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; }); }
+            } else { 
+                p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; }); 
+            }
 
-            // ターン終了（後手の番が終わった時）の勝敗チェック
-            if (currentPlayer !== startingPlayer) {
-                if (p1WonThisRound && res.hits === config.digits) return endGame("DRAW");
-                if (p1WonThisRound) return endGame(startingPlayer === myPlayerNum ? "YOU WIN" : "YOU LOSE");
-                if (res.hits === config.digits) return endGame(startingPlayer === myPlayerNum ? "YOU LOSE" : "YOU WIN");
+            const isFirstPlayerTurn = (currentPlayer === startingPlayer);
+
+            if (res.hits === config.digits) {
+                if (isFirstPlayerTurn) {
+                    firstPlayerWon = true; // 先行（相手）が正解。
+                } else {
+                    if (firstPlayerWon) return endGame("DRAW");
+                    return endGame("YOU LOSE"); // 相手（後行）のみ正解したので自分の負け
+                }
+            } else {
+                if (!isFirstPlayerTurn && firstPlayerWon) {
+                    return endGame("YOU WIN");
+                }
             }
             
             currentPlayer = (currentPlayer === 1 ? 2 : 1); 

@@ -171,6 +171,7 @@
                     </div>
                 </div>
                 <input type="range" id="bgmVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="if(window.updateVolume) window.updateVolume('bgm', this.value)">
+                <span id="bgmVolText" class="text-[9px] font-mono w-4 opacity-70">50</span>
                 
                 <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
                 
@@ -185,6 +186,7 @@
                     </div>
                 </div>
                 <input type="range" id="seVolume" min="0" max="1" step="0.01" value="0.5" class="w-12" oninput="if(window.updateVolume) window.updateVolume('se', this.value)">
+                <span id="seVolText" class="text-[9px] font-mono w-4 opacity-70">50</span>
             </div>
             <button id="exitBtn" onclick="if(window.handleSmartExit) window.handleSmartExit()" class="hidden text-[9px] border border-white/10 px-3 py-1.5 rounded-full hover:bg-red-900/20 font-bold uppercase">Exit</button>
         </div>
@@ -256,7 +258,6 @@
                     <button onclick="if(window.createRoom) window.createRoom()" id="create-btn" class="w-full py-2 bg-cyan-500 text-black font-bold rounded uppercase text-[11px]">Create Room</button>
                 </div>
 
-                <!-- Join Room -->
                 <div class="space-y-3">
                     <h2 class="text-sm font-bold text-pink-500 uppercase italic">Join Room</h2>
                     <div>
@@ -478,11 +479,13 @@
                 currentBgmVol = v; 
                 if (bgmGain) bgmGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
                 if(v > 0) prevBgmVol = v;
+                document.getElementById('bgmVolText').innerText = Math.round(v * 100);
                 updateMuteIcon('bgm', v === 0);
             } else {
                 currentSeVol = v; 
                 if(seGain) seGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.1);
                 if(v > 0) prevSeVol = v;
+                document.getElementById('seVolText').innerText = Math.round(v * 100);
                 updateMuteIcon('se', v === 0);
             }
         };
@@ -514,24 +517,19 @@
             sfx.tap();
         };
 
-        function showError(type, msg) {
-            const el = document.getElementById(`${type}-error`);
-            el.innerText = msg; el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 2500);
-        }
-
         // ==========================================
         // 2. PEER.JS ONLINE LOGIC
         // ==========================================
         let peer = null, conn = null, myUserName = "Guest", partnerName = "Partner", myPlayerNum = null;
-        let hostReady = false, guestReady = false;
+        let hostReady = false, guestReady = false, isGameActive = false;
 
         function disbandRoom() {
             if (peer) { peer.destroy(); peer = null; }
-            conn = null; hostReady = false; guestReady = false;
+            conn = null; hostReady = false; guestReady = false; isGameActive = false;
             p1Secret = []; p2Secret = [];
             setupState.phase = 'p1';
             setupState.p1Secret = Array(config.digits).fill(null);
+            setupState.p2Secret = Array(config.digits).fill(null);
             const sBtn = document.getElementById('search-btn');
             if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
         }
@@ -576,12 +574,7 @@
                         btn.classList.add('hidden'); conn = tempConn;
                     }
                 });
-                setTimeout(() => { 
-                    if(!conn || !conn.open) { 
-                        showError('join', 'Not Found'); 
-                        btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden');
-                    } 
-                }, 3000);
+                setTimeout(() => { if(!conn || !conn.open) { showError('join', 'Not Found'); btn.innerText = "Search"; btn.disabled = false; btn.classList.remove('hidden'); } }, 3000);
             });
         };
 
@@ -596,7 +589,12 @@
             conn.on('data', data => {
                 if(data.type === 'request-info') conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 else if(data.type === 'guest-join') { partnerName = data.guestName || "Guest"; document.getElementById('p2-name-label').innerText = partnerName; }
-                else if(data.type === 'start') { config = data.config; config.mode = 'online'; currentPlayer = data.startPlayer; partnerName = data.hostName; startGameOnline(); }
+                else if(data.type === 'start') { 
+                    config = data.config; config.mode = 'online'; 
+                    currentPlayer = data.startPlayer; partnerName = data.hostName; 
+                    p1Secret = data.p1Secret; // ゲストもホストのシークレットを受け取る
+                    startGameOnline(); 
+                }
                 else if(data.type === 'ready') { 
                     if(myPlayerNum === 1) { guestReady = true; p2Secret = data.secret; checkOnlineStart(); } 
                     else { hostReady = true; p1Secret = data.secret; } 
@@ -610,7 +608,10 @@
         function checkOnlineStart() {
             if (myPlayerNum === 1 && hostReady && guestReady) {
                 currentPlayer = 1; 
-                conn.send({ type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer });
+                conn.send({ 
+                    type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer,
+                    p1Secret: p1Secret // ホストが開始時に自分のコードも共有する
+                });
                 startGameOnline();
             }
         }
@@ -627,17 +628,9 @@
 
         function hideAll() { document.querySelectorAll('#main-menu, #online-lobby, #setup-screen, #game-screen, #overlay').forEach(el => el.classList.add('hidden-state')); }
 
-        window.showMainMenu = () => { if (config.mode === 'online') disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
+        window.showMainMenu = () => { disbandRoom(); clearInterval(gameTimerInterval); hideAll(); document.getElementById('main-menu').classList.remove('hidden-state'); document.getElementById('exitBtn').classList.add('hidden'); };
         window.showOfflineSetup = () => { hideAll(); setupState.phase = 'p1'; document.getElementById('setup-screen').classList.remove('hidden-state'); document.getElementById('setup-options').classList.remove('hidden-state'); window.setMode('1p'); };
-        window.showOnlineLobby = () => { 
-            hideAll(); 
-            const lobby = document.getElementById('online-lobby');
-            lobby.classList.remove('hidden-state');
-            document.getElementById('join-preview').classList.add('hidden'); 
-            const sBtn = document.getElementById('search-btn');
-            if (sBtn) { sBtn.innerText = "Search"; sBtn.disabled = false; sBtn.classList.remove('hidden'); }
-            disbandRoom(); 
-        };
+        window.showOnlineLobby = () => { hideAll(); document.getElementById('online-lobby').classList.remove('hidden-state'); document.getElementById('join-preview').classList.add('hidden'); disbandRoom(); };
 
         window.handleSmartBackFromSetup = () => {
             if (config.mode === 'online') {
@@ -652,12 +645,12 @@
         };
 
         window.handleSmartExit = () => {
+            isGameActive = false; isProcessing = false;
             clearInterval(gameTimerInterval);
             document.getElementById('game-screen').classList.add('hidden-state');
             document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
-            isProcessing = false;
             if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
             else { window.showOfflineSetup(); window.resetSetupUI(); }
         };
@@ -678,12 +671,10 @@
         window.setDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`btn-d${v}`); if(el) el.className = `flex-1 py-1.5 rounded border border-white/10 text-sm font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
         window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById('btn-l' + v).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
-        window.updateTimeSetting = (val) => { config.timeLimit = parseInt(val); document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; };
         
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
-            activeIdx = 0; 
-            document.getElementById('start-btn').classList.remove('hidden');
+            activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('online-waiting-info').classList.add('hidden');
             window.renderSetupSlots(); window.renderSetupKeypad(); window.updateSetupUI(); 
         };
@@ -692,7 +683,6 @@
             const btn = document.getElementById('start-btn'); 
             btn.innerText = config.mode === 'online' ? "READY" : (setupState.phase === 'p1' ? "NEXT" : "START");
             const label = document.getElementById('setup-label');
-            // ラベル表示を1P戦でも「1P CODE」に統一
             label.innerText = setupState.phase === 'p1' ? "1P CODE" : "2P CODE";
             label.style.color = setupState.phase === 'p1' ? "var(--neon-blue)" : "var(--neon-pink)";
             window.checkReady(); 
@@ -742,6 +732,7 @@
         };
 
         function startGameOnline() {
+            isGameActive = true;
             document.getElementById('p1-panel-label').innerText = myUserName;
             document.getElementById('p2-name-label').innerText = partnerName;
             if(myPlayerNum === 1) { config.showP1Stats = document.getElementById('onlineStatsToggle').checked; config.showP2Stats = config.showP1Stats; }
@@ -749,6 +740,7 @@
         }
 
         function startGame() { 
+            isGameActive = true;
             config.showP1Stats = document.getElementById('p1StatsToggle').checked;
             config.showP2Stats = document.getElementById('p2StatsToggle').checked;
             p1Secret = [...setupState.p1Secret]; 
@@ -773,6 +765,8 @@
         }
 
         function initTurn() {
+            if (!isGameActive) return;
+            isProcessing = false; activeIdx = 0;
             document.getElementById('turnCounter').innerText = turn;
             let isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
             let statusText = "", colorClass = "text-white";
@@ -786,6 +780,12 @@
             const indicator = document.getElementById('turn-indicator-text');
             indicator.innerText = statusText; indicator.className = `text-2xl font-mono font-black tracking-widest mb-4 transition-colors ${colorClass}`;
             document.getElementById('p1-victory-flag').classList.toggle('hidden', !p1WonThisRound);
+            
+            // 2Pオフライン用リセット
+            if (config.mode === '2p') {
+                currentGuess = Array(config.digits).fill(null);
+            }
+
             window.renderGameSlots(); window.renderGameKeypad(); updateStatsUI(); startTimer();
         }
 
@@ -814,29 +814,37 @@
         }
 
         window.playerAction = async () => {
-            if (isProcessing) return;
+            if (isProcessing || !isGameActive) return;
             isProcessing = true; clearInterval(gameTimerInterval); sfx.launch();
+            
             let targetS = (config.mode === 'online') ? (myPlayerNum === 1 ? p2Secret : p1Secret) : (currentPlayer === 1 ? p2Secret : p1Secret);
             const res = checkResult(currentGuess, targetS);
             const guessCopy = [...currentGuess];
+            
             if(config.mode === 'online' && conn && conn.open) conn.send({ type: 'action', guess: guessCopy, res: res });
             
             const actingPlayerNum = (config.mode === 'online') ? myPlayerNum : currentPlayer;
+            const logWho = actingPlayerNum === 1 ? 'player' : 'cpu';
+            
+            await showAnnounce(guessCopy.join(''), res, actingPlayerNum); 
+            
+            // 演出後にゲームが有効か再チェック（バグ対策）
+            if (!isGameActive) return;
+
             if (actingPlayerNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guessCopy.join(''), res, 1); addLog('player', guessCopy, res);
             } else {
                 p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(guessCopy.join(''), res, 2); addLog('cpu', guessCopy, res);
             }
+            addLog(logWho, guessCopy, res);
             
             if (res.hits === config.digits) {
                 if (currentPlayer === 1) { p1WonThisRound = true; } 
                 else if (p1WonThisRound) { return endGame("DRAW", "Both Solved it!"); } 
-                else { return endGame("ENEMY WIN", "2P Solved it!"); }
+                else { return endGame(config.mode === '2p' ? "2P WIN" : "ENEMY WIN", "Code Solved!"); }
             }
 
-            if (currentPlayer === 2 && p1WonThisRound) { return endGame("YOU WIN", "1P Solved it!"); }
+            if (currentPlayer === 2 && p1WonThisRound) { return endGame(config.mode === '2p' ? "1P WIN" : "YOU WIN", "Code Solved!"); }
 
             if (config.mode === '1p') { 
                 const cpuWon = await cpuTurn(); 
@@ -851,16 +859,20 @@
         };
 
         window.handleRemoteAction = async (data) => {
+            if (!isGameActive) return;
             isProcessing = true; clearInterval(gameTimerInterval);
             const res = data.res; const remoteP = (myPlayerNum === 1 ? 2 : 1);
             
+            await showAnnounce(data.guess.join(''), res, remoteP);
+            if (!isGameActive) return;
+
             if (remoteP === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(data.guess.join(''), res, 1); addLog('player', data.guess, res);
+                addLog('player', data.guess, res);
                 if (res.hits === config.digits) p1WonThisRound = true;
             } else {
                 p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
-                await showAnnounce(data.guess.join(''), res, 2); addLog('cpu', data.guess, res);
+                addLog('cpu', data.guess, res);
             }
 
             if (currentPlayer === 2) {
@@ -875,19 +887,23 @@
         }
 
         async function cpuTurn() {
+            if (!isGameActive) return false;
             await new Promise(r => setTimeout(r, 1000));
+            if (!isGameActive) return false;
             let guess = (Math.random() < (config.level === 3 ? 1.0 : (config.level === 2 ? 0.4 : 0.1)) && p2Knowledge.length > 0) ? p2Knowledge[Math.floor(Math.random() * p2Knowledge.length)] : allPerms[Math.floor(Math.random() * allPerms.length)];
             const res = checkResult(guess, p1Secret); 
             p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guess, p); return r.hits === res.hits && r.blows === res.blows; });
-            await showAnnounce(guess.join(''), res, 2); addLog('cpu', guess, res); return res.hits === config.digits;
+            await showAnnounce(guess.join(''), res, 2); 
+            if (!isGameActive) return false;
+            addLog('cpu', guess, res); return res.hits === config.digits;
         }
 
         function endGame(title, body) { 
-            clearInterval(gameTimerInterval); isProcessing = false;
+            clearInterval(gameTimerInterval); isProcessing = false; isGameActive = false;
             document.getElementById('result-title').innerText = title; 
             document.getElementById('result-body').innerText = body; 
             document.getElementById('overlay').classList.remove('hidden-state'); 
-            if (title.includes("WIN") || title === "DRAW") sfx.win(); else sfx.loss(); 
+            if (title.includes("WIN") || title === "DRAW" || title.includes("1P") || title.includes("2P")) sfx.win(); else sfx.loss(); 
         }
 
         async function showAnnounce(num, res, pNum) {
@@ -904,6 +920,7 @@
         }
 
         function addLog(who, guess, res) {
+            if (!isGameActive && !document.getElementById('overlay').classList.contains('hidden-state')) return;
             const list = document.getElementById(who === 'player' ? 'playerHistory' : 'cpuHistory');
             const item = document.createElement('div');
             item.className = "flex justify-between items-center p-1.5 bg-white/5 border border-white/5 rounded mb-1";

@@ -148,7 +148,6 @@
     <header class="flex justify-between items-center p-1.5 px-4 glass-panel rounded-none border-t-0 border-x-0 shrink-0">
         <div class="flex items-center gap-4">
             <div id="turn-display" class="hidden text-[10px] tracking-widest opacity-60 uppercase">Round: <span id="turnCounter" class="text-cyan-400 font-bold">1</span></div>
-            <div id="timer-box" class="hidden"><span id="gameTimer">♾️</span></div>
         </div>
         
         <div class="flex items-center gap-3">
@@ -356,9 +355,10 @@
 
             <div class="flex flex-col w-2/4 gap-2">
                 <div class="glass-panel p-3 flex-1 flex flex-col justify-center relative">
-                    <button onclick="if(window.handleSmartExit) window.handleSmartExit()" class="absolute top-2 right-3 text-[9px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold">Back</button>
+                    <button onclick="if(window.handleSmartExit) window.handleSmartExit()" class="absolute top-0 right-0 p-3 text-[10px] opacity-30 hover:opacity-100 uppercase tracking-widest font-bold z-10">Back</button>
                     
                     <div class="text-center mb-4">
+                        <div class="text-[11px] font-mono tracking-widest opacity-60 mb-1">TIME: <span id="gameTimer" class="text-cyan-400 font-bold text-lg">♾️</span></div>
                         <div id="turn-indicator-text" class="text-2xl font-mono font-black tracking-widest mb-4 transition-colors">YOUR TURN</div>
                         <p id="game-input-label" class="text-[9px] opacity-40 mb-2 uppercase font-bold">Guess</p>
                         <div class="flex justify-center gap-2" id="inputSlots"></div>
@@ -519,7 +519,7 @@
         // ==========================================
         let peer = null, conn = null, myUserName = "Guest", partnerName = "Partner", myPlayerNum = null;
         let hostReady = false, guestReady = false, isGameActive = false, startingPlayer = 1;
-        let connectionSetupDone = false; // 重複リスナー防止フラグ
+        let connectionSetupDone = false; 
 
         function disbandRoom() {
             if (conn && conn.open) { conn.send({ type: 'disband' }); conn.close(); }
@@ -556,7 +556,7 @@
                 btn.innerText = "Create Room"; btn.disabled = false;
             });
             peer.on('connection', (connection) => { 
-                if (conn) return; // 重複接続防止
+                if (conn) return; 
                 conn = connection; setupConnection(); 
             });
         };
@@ -574,7 +574,7 @@
                 let infoReceived = false;
                 tempConn.on('data', data => {
                     if(data.type === 'room-info' && !infoReceived) {
-                        infoReceived = true; // 1度だけ処理する
+                        infoReceived = true; 
                         config.digits = data.config.digits; 
                         partnerName = data.hostName || "Host"; 
                         document.getElementById('preview-host-name').innerText = partnerName;
@@ -600,7 +600,7 @@
         };
 
         function setupConnection() {
-            if (connectionSetupDone) return; // リスナーの重複登録を防止
+            if (connectionSetupDone) return; 
             connectionSetupDone = true;
 
             conn.on('data', data => {
@@ -613,9 +613,9 @@
                     conn.send({ type: 'room-info', config: config, hostName: myUserName });
                 }
                 else if(data.type === 'ready') {
-                    if (myPlayerNum === 1) { 
+                    if (myPlayerNum === 1) { // Host receives guest ready
                         guestReady = true; p2Secret = data.secret; partnerName = data.userName; checkOnlineStart();
-                    } else { 
+                    } else { // Guest receives host ready
                         hostReady = true; p1Secret = data.secret; partnerName = data.userName;
                     }
                 }
@@ -700,6 +700,11 @@
         window.setOnlineDigits = (n) => { config.digits = n; [3,4,5].forEach(v => { const el = document.getElementById(`obtn-d${v}`); if(el) el.className = `py-1.5 rounded border border-white/10 text-xs font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`; }); window.resetSetupUI(); };
         window.setLevel = (n) => { [1,2,3].forEach(v => document.getElementById('btn-l' + v).className = `flex-1 py-1.5 rounded border border-white/10 text-[10px] font-bold ${v===n ? 'bg-cyan-600' : 'bg-white/5'}`); config.level = n; };
         
+        window.updateTimeSetting = (val) => { 
+            config.timeLimit = parseInt(val); 
+            document.getElementById('timeLimitDisplay').innerText = val == 0 ? "♾️" : val + "s"; 
+        };
+        
         window.resetSetupUI = () => { 
             setupState.p1Secret = Array(config.digits).fill(null); setupState.p2Secret = Array(config.digits).fill(null); 
             activeIdx = 0; document.getElementById('start-btn').classList.remove('hidden'); document.getElementById('online-waiting-info').classList.add('hidden');
@@ -768,7 +773,8 @@
         async function startGame() { 
             isGameActive = true; config.showP1Stats = document.getElementById('p1StatsToggle').checked; config.showP2Stats = document.getElementById('p2StatsToggle').checked;
             p1Secret = [...setupState.p1Secret]; p2Secret = config.mode === '1p' ? genRandArr(config.digits) : [...setupState.p2Secret]; 
-            startingPlayer = Math.random() < 0.5 ? 1 : 2; currentPlayer = startingPlayer;
+            // オフラインは必ず1Pからスタート
+            startingPlayer = 1; currentPlayer = startingPlayer;
             turn = 1; document.getElementById('p1-panel-label').innerText = "YOU"; document.getElementById('p2-name-label').innerText = config.mode === '1p' ? "CPU" : "2P";
             startGameUI(); 
             await showTurnAnnounce(startingPlayer === 1 ? "1P IS FIRST" : "2P IS FIRST", startingPlayer === 1);
@@ -817,7 +823,7 @@
             currentGuess.forEach((val, i) => {
                 const div = document.createElement('div'); div.className = `slot ${i === activeIdx ? 'active' : ''}`;
                 div.innerText = val !== null ? val : ''; 
-                div.onclick = () => { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); };
+                div.onclick = () => { if(!isProcessing) { sfx.delete(); currentGuess[i] = null; activeIdx = i; window.renderGameSlots(); window.renderGameKeypad(); } };
                 container.appendChild(div);
             });
             const isMyTurn = (config.mode === 'online') ? (currentPlayer === myPlayerNum) : (config.mode === '2p' ? true : (currentPlayer === 1));
@@ -845,10 +851,8 @@
             
             await showAnnounce(guessCopy.join(''), res, myPlayerNum || currentPlayer); if (!isGameActive) return;
 
-            // 自分の履歴は常に左側
             addLog('player', guessCopy, res);
 
-            // 推論更新
             if (config.mode === 'online') {
                 if(myPlayerNum === 1) p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
                 else p2Knowledge = p2Knowledge.filter(p => { const r = checkResult(guessCopy, p); return r.hits === res.hits && r.blows === res.blows; });
@@ -859,14 +863,14 @@
 
             if (res.hits === config.digits) {
                 if (isFirstPlayerTurn) {
-                    firstPlayerWon = true; // 先行が正解。後行のチャンスへ。
+                    firstPlayerWon = true; 
                 } else {
-                    if (firstPlayerWon) return endGame("DRAW"); // 両者正解
-                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN"); // 後行のみ正解
+                    if (firstPlayerWon) return endGame("DRAW");
+                    return endGame(config.mode === '2p' ? (currentPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU WIN");
                 }
             } else {
                 if (!isFirstPlayerTurn && firstPlayerWon) {
-                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU LOSE"); // 後行が外して先行の勝利確定
+                    return endGame(config.mode === '2p' ? (startingPlayer === 1 ? "1P WIN" : "2P WIN") : "YOU LOSE");
                 }
             }
 
@@ -890,9 +894,7 @@
             const res = data.res; const remotePNum = (myPlayerNum === 1 ? 2 : 1);
             await showAnnounce(data.guess.join(''), res, remotePNum); if (!isGameActive) return;
 
-            // 相手の履歴は常に右側
             addLog('cpu', data.guess, res);
-
             if (remotePNum === 1) {
                 p1Knowledge = p1Knowledge.filter(p => { const r = checkResult(data.guess, p); return r.hits === res.hits && r.blows === res.blows; });
             } else { 
@@ -901,17 +903,16 @@
 
             const isFirstPlayerTurn = (currentPlayer === startingPlayer);
 
-            // ターン終了（相手の番が終わった時）の勝敗チェック
             if (res.hits === config.digits) {
                 if (isFirstPlayerTurn) {
-                    firstPlayerWon = true; // 先行（相手）が正解。
+                    firstPlayerWon = true; 
                 } else {
-                    if (firstPlayerWon) return endGame("DRAW"); // 両方正解
-                    return endGame("YOU LOSE"); // 相手（後行）のみ正解したので自分の負け
+                    if (firstPlayerWon) return endGame("DRAW"); 
+                    return endGame("YOU LOSE"); 
                 }
             } else {
                 if (!isFirstPlayerTurn && firstPlayerWon) {
-                    return endGame("YOU WIN"); // 後行（相手）が外して、先行（自分）が正解済み
+                    return endGame("YOU WIN"); 
                 }
             }
             
@@ -980,8 +981,29 @@
         }
 
         function startTimer() {
-            clearInterval(gameTimerInterval); if (config.timeLimit === 0) return;
-            currentTime = config.timeLimit; gameTimerInterval = setInterval(() => { currentTime--; if (currentTime <= 0) { clearInterval(gameTimerInterval); endGame(config.mode === '2p' ? (currentPlayer === 1 ? "2P WIN" : "1P WIN") : "YOU LOSE"); } }, 1000);
+            clearInterval(gameTimerInterval); 
+            if (config.timeLimit === 0) {
+                document.getElementById('gameTimer').innerText = "♾️";
+                return;
+            }
+            currentTime = config.timeLimit; 
+            document.getElementById('gameTimer').innerText = currentTime + "s";
+            gameTimerInterval = setInterval(() => { 
+                currentTime--; 
+                document.getElementById('gameTimer').innerText = currentTime + "s";
+                if (currentTime <= 0) { 
+                    clearInterval(gameTimerInterval); 
+                    let title = "";
+                    if (config.mode === 'online') {
+                        title = (currentPlayer === myPlayerNum) ? "YOU LOSE" : "YOU WIN";
+                    } else if (config.mode === '2p') {
+                        title = (currentPlayer === 1) ? "2P WIN" : "1P WIN";
+                    } else {
+                        title = (currentPlayer === 1) ? "YOU LOSE" : "YOU WIN";
+                    }
+                    endGame(title); 
+                } 
+            }, 1000);
         }
 
         function checkResult(guess, secret) { 

@@ -562,12 +562,15 @@
         let connectionSetupDone = false; 
         let isSpectator = false;
         let spectatorConns = [];
+        let queryConns = []; // 待機中（部屋情報の問い合わせ中）の接続リスト
         let p1CurrentInput = [], p2CurrentInput = [];
         let roomIsFull = false;
 
         function disbandRoom() {
             if (conn && conn.open) { conn.send({ type: 'disband' }); conn.close(); }
             spectatorConns.forEach(c => { if(c.open) { c.send({ type: 'disband' }); c.close(); } });
+            queryConns.forEach(c => { if(c.open) { c.close(); } });
+            queryConns = [];
             spectatorConns = [];
             if (peer) { peer.destroy(); peer = null; }
             conn = null; hostReady = false; guestReady = false; isGameActive = false;
@@ -616,13 +619,9 @@
         function setupNewIncomingConnection(newConn) {
             newConn.on('data', data => {
                 if (data.type === 'request-info') {
-                    newConn.send({ 
-                        type: 'room-info', 
-                        config: config, 
-                        hostName: myUserName, 
-                        guestName: (conn && conn.open) ? partnerName : "---",
-                        isFull: !!(conn && conn.open)
-                    });
+                    // 問い合わせリストに追加
+                    if (!queryConns.find(c => c.peer === newConn.peer)) queryConns.push(newConn);
+                    sendRoomInfo(newConn);
                 } else if (data.type === 'guest-join') {
                     if (conn && conn.open) {
                         newConn.send({ type: 'error', msg: 'Room is full' });
@@ -630,17 +629,40 @@
                         conn = newConn;
                         partnerName = data.guestName || "Guest";
                         setupConnection();
+                        // 状態が変わったので全待機者に通知
+                        broadcastRoomInfoToQuerying();
                         broadcastToSpectators({ type: 'name-update', guestName: partnerName });
                     }
                 } else if (data.type === 'spectator-join') {
-                    if(!(conn && conn.open)) {
-                        newConn.send({ type: 'error', msg: 'Game not ready' });
+                    // ゲーム開始前は観戦不可（検索側でガードしているが念のため）
+                    if(!isGameActive) {
+                        newConn.send({ type: 'error', msg: 'Game not started' });
                     } else {
                         spectatorConns.push(newConn);
                         syncStateToSpectator(newConn);
                     }
                 }
             });
+            newConn.on('close', () => {
+                queryConns = queryConns.filter(c => c.peer !== newConn.peer);
+            });
+        }
+
+        function sendRoomInfo(targetConn) {
+            if (!targetConn.open) return;
+            targetConn.send({ 
+                type: 'room-info', 
+                config: config, 
+                hostName: myUserName, 
+                guestName: (conn && conn.open) ? partnerName : "---",
+                isFull: !!(conn && conn.open),
+                isGameActive: isGameActive
+            });
+        }
+
+        function broadcastRoomInfoToQuerying() {
+            queryConns = queryConns.filter(c => c.open);
+            queryConns.forEach(c => sendRoomInfo(c));
         }
 
         function broadcastToSpectators(data) {
@@ -678,10 +700,9 @@
             peer.on('open', () => {
                 const tempConn = peer.connect('HB-ROOM-' + rawId);
                 tempConn.on('open', () => { tempConn.send({ type: 'request-info' }); });
-                let infoReceived = false;
+                
                 tempConn.on('data', data => {
-                    if(data.type === 'room-info' && !infoReceived) {
-                        infoReceived = true; 
+                    if(data.type === 'room-info') {
                         config.digits = data.config.digits; 
                         partnerName = data.hostName || "Host"; 
                         roomIsFull = data.isFull;
@@ -693,17 +714,30 @@
                         document.getElementById('preview-stats').innerText = data.config.showP1Stats ? "ON" : "OFF";
                         
                         const dynamicBtn = document.getElementById('join-dynamic-btn');
-                        if (data.isFull) {
-                            dynamicBtn.innerText = "Join as Spectator";
-                            dynamicBtn.className = "w-full py-2 bg-white/10 text-white font-bold rounded uppercase text-[10px]";
-                        } else {
+                        
+                        if (!data.isFull) {
+                            // 枠が空いている
                             dynamicBtn.innerText = "Join as Player";
                             dynamicBtn.className = "w-full py-2 bg-cyan-600 text-white font-bold rounded uppercase text-[10px]";
+                            dynamicBtn.disabled = false;
+                            roomIsFull = false;
+                        } else if (data.isGameActive) {
+                            // 満員 ＋ ゲーム中 ＝ 観戦可能
+                            dynamicBtn.innerText = "Join as Spectator";
+                            dynamicBtn.className = "w-full py-2 bg-white/10 text-white font-bold rounded uppercase text-[10px]";
+                            dynamicBtn.disabled = false;
+                            roomIsFull = true;
+                        } else {
+                            // 満員 ＋ ゲーム前 ＝ 入室不可
+                            dynamicBtn.innerText = "Game Preparing... (Wait)";
+                            dynamicBtn.className = "w-full py-2 bg-white/5 text-white/30 font-bold rounded uppercase text-[10px] cursor-not-allowed";
+                            dynamicBtn.disabled = true;
+                            roomIsFull = true;
                         }
                         
                         document.getElementById('join-preview').classList.remove('hidden');
                         btn.classList.add('hidden'); 
-                        conn = tempConn;
+                        conn = tempConn; // 接続を維持して更新を待つ
                     }
                     if(data.type === 'error') {
                         showError('join', data.msg); disbandRoom();
@@ -799,11 +833,14 @@
             if (myPlayerNum === 1 && hostReady && guestReady) {
                 startingPlayer = Math.random() < 0.5 ? 1 : 2;
                 currentPlayer = startingPlayer;
+                isGameActive = true; 
                 const startData = { 
                     type: 'start', config: config, hostName: myUserName, startPlayer: currentPlayer, p1Secret: p1Secret 
                 };
                 conn.send(startData);
                 broadcastToSpectators(startData);
+                // ゲーム開始により待機者のボタン表示を更新
+                broadcastRoomInfoToQuerying();
                 startGameOnline();
             }
         }
@@ -852,11 +889,17 @@
         };
 
         window.handleSmartExit = () => {
+            const wasGameActive = isGameActive;
             isGameActive = false; isProcessing = false; clearInterval(gameTimerInterval);
             document.getElementById('game-screen').classList.add('hidden-state'); document.getElementById('overlay').classList.add('hidden-state');
             document.getElementById('playerHistory').innerHTML = ''; document.getElementById('cpuHistory').innerHTML = '';
             document.getElementById('exitBtn').classList.add('hidden');
-            if (config.mode === 'online') { disbandRoom(); window.showOnlineLobby(); }
+            
+            if (config.mode === 'online') { 
+                if(myPlayerNum === 1 && wasGameActive) broadcastRoomInfoToQuerying(); // ホスト終了時は部屋情報を更新
+                disbandRoom(); 
+                window.showOnlineLobby(); 
+            }
             else { window.showOfflineSetup(); window.resetSetupUI(); }
         };
 
@@ -1004,7 +1047,8 @@
                 if (config.mode === '2p') {
                     mySecretArea.innerText = "?".repeat(config.digits); codeLabel.innerText = "LOCAL CODE HIDDEN";
                 } else {
-                    mySecretArea.innerText = p1Secret.join('');
+                    const mySecret = (config.mode === 'online' && myPlayerNum === 2) ? p2Secret : p1Secret;
+                    mySecretArea.innerText = mySecret.join('');
                     codeLabel.innerText = "YOUR SECRET CODE";
                 }
             }
@@ -1032,7 +1076,6 @@
                 statusText = (currentPlayer === 1) ? "YOUR TURN" : "ENEMY TURN";
                 colorClass = (currentPlayer === 1) ? "text-[#00f2ff]" : "text-[#ff00e5]";
             } else {
-                // オフライン2P
                 statusText = (currentPlayer === 1 ? "1P TURN" : "2P TURN");
                 colorClass = (currentPlayer === 1 ? "text-[#00f2ff]" : "text-[#ff00e5]");
                 currentGuess = Array(config.digits).fill(null); activeIdx = 0;
@@ -1083,10 +1126,11 @@
             document.getElementById('launchBtn').disabled = currentGuess.includes(null) || !allowInput;
             
             if (config.mode === 'online' && conn && conn.open && !isSpectator) {
-                const typingData = { type: 'typing', player: myPlayerNum, input: [...currentGuess] };
+                const typingData = { type: 'typing', player: (myPlayerNum || 1), input: [...currentGuess] };
                 conn.send(typingData);
-                if (myPlayerNum === 1) {
-                    p1CurrentInput = [...currentGuess];
+                if (myPlayerNum === 1 || config.mode === 'online') {
+                    if (myPlayerNum === 1) p1CurrentInput = [...currentGuess];
+                    else p2CurrentInput = [...currentGuess];
                     broadcastToSpectators(typingData);
                 }
             }
@@ -1114,7 +1158,7 @@
             const res = checkResult(currentGuess, targetS); const guessCopy = [...currentGuess];
             
             if(config.mode === 'online' && conn && conn.open) {
-                const actionData = { type: 'action', guess: guessCopy, res: res, player: myPlayerNum };
+                const actionData = { type: 'action', guess: guessCopy, res: res, player: (myPlayerNum || 1) };
                 conn.send(actionData);
                 if (myPlayerNum === 1) broadcastToSpectators(actionData);
             }
@@ -1243,6 +1287,9 @@
             document.getElementById('result-title').innerText = finalTitle; 
             document.getElementById('overlay').classList.remove('hidden-state'); 
             if (finalTitle.includes("WIN") || finalTitle === "DRAW") sfx.win(); else sfx.loss(); 
+            
+            // ゲーム終了を問い合わせ中のユーザーに通知
+            if(myPlayerNum === 1) broadcastRoomInfoToQuerying();
         }
 
         async function showTurnAnnounce(text, isFirst) {
